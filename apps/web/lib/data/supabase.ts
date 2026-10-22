@@ -1,0 +1,636 @@
+/**
+ * LihimRepository over Supabase (NEXT_PUBLIC_DATA=supabase). Reads go through the RLS'd tables,
+ * RPCs and views in supabase/migrations; admin chain actions are signed here in the browser with
+ * the per-group admin key and relayed by the `submit-admin-tx` Edge Function (supabase/README.md
+ * → Flows). Votes never come through here (lib/vote.ts → lib/relay.ts).
+ *
+ * Privacy (lihim-SPEC.md → "Never stored anywhere in Supabase"): the only identity material that
+ * leaves the browser is a member's commitment (submit_commitment, unlinked by design) and the
+ * admin's PUBLIC key. prf_out, identity secrets and admin private keys stay in lib/identity.ts.
+ */
+import { createClient, type PostgrestError, type SupabaseClient } from "@supabase/supabase-js";
+import type { AdminTxBody, LihimNetwork } from "@lihim/sdk";
+import { env } from "../env";
+import { toHex32 } from "../format";
+import { groupAdminKey, groupIdentity, loadSdk, setPrfOutput } from "../identity";
+import type { LihimRepository } from "./index";
+import { ForbiddenError, InviteError, NotFoundError, SmallGroupError } from "./errors";
+import type {
+  Group,
+  GroupRole,
+  Invite,
+  Member,
+  Poll,
+  PollAudit,
+  PollKind,
+  PollOption,
+  PollResult,
+  PollResultRow,
+  PollStatus,
+} from "./types";
+
+// ---------------------------------------------------------------------------
+// Clients
+// ---------------------------------------------------------------------------
+
+let client: SupabaseClient | null = null;
+
+function db(): SupabaseClient {
+  if (!client) {
+    if (!env.supabaseUrl || !env.supabaseAnonKey) {
+      throw new Error("NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are required for NEXT_PUBLIC_DATA=supabase");
+    }
+    client = createClient(env.supabaseUrl, env.supabaseAnonKey);
+    // prf_out must not outlive the session that unlocked it (shared devices).
+    client.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_OUT") setPrfOutput(null);
+    });
+  }
+  return client;
+}
+
+function network(): LihimNetwork {
+  return {
+    rpcUrl: env.stellarRpcUrl,
+    networkPassphrase: env.stellarNetworkPassphrase,
+    semaphoreContractId: env.semaphoreContractId,
+    pollsContractId: env.pollsContractId,
+    verifierContractId: "",
+  };
+}
+
+async function uid(): Promise<string> {
+  const { data } = await db().auth.getSession();
+  const id = data.session?.user.id;
+  if (!id) throw new ForbiddenError("Sign in first");
+  return id;
+}
+
+/** Throws the PostgREST error; RLS "no rows" is not an error and is handled by callers. */
+function check<T>(res: { data: T; error: PostgrestError | null }): T {
+  if (res.error) throw new Error(res.error.message);
+  return res.data;
+}
+
+/** List form of `check`: rows hidden by RLS simply aren't there. */
+function rowsOf<T>(res: { data: T[] | null; error: PostgrestError | null }): T[] {
+  return check(res) ?? [];
+}
+
+// ---------------------------------------------------------------------------
+// Row mapping
+// ---------------------------------------------------------------------------
+
+interface GroupRow {
+  id: string;
+  chain_group_id: number | string | null;
+  name: string;
+  description: string;
+  admin_user_id: string;
+  min_members: number;
+  member_count: number;
+  created_at: string;
+}
+
+interface PollRow {
+  id: string;
+  chain_poll_id: number | string | null;
+  group_id: string;
+  title: string;
+  kind: PollKind;
+  options: string[] | null;
+  opens_at: string | null;
+  closes_at: string;
+  hide_live_tally: boolean;
+  voters_count: number;
+  frozen_size: number | null;
+  status: PollStatus;
+  frozen_root: string | null;
+  created_at: string;
+}
+
+const GROUP_COLS = "id, chain_group_id, name, description, admin_user_id, min_members, member_count, created_at";
+const POLL_COLS =
+  "id, chain_poll_id, group_id, title, kind, options, opens_at, closes_at, hide_live_tally, voters_count, frozen_size, status, frozen_root, created_at";
+
+const str = (v: number | string | null): string | null => (v === null ? null : String(v));
+
+/** Option values follow the vote message (types.ts PollOption): 0-based, ratings 1..=5. */
+function optionsOf(kind: PollKind, labels: string[] | null): PollOption[] {
+  if (kind === "rating") return [1, 2, 3, 4, 5].map((v) => ({ value: v, label: String(v) }));
+  return (labels ?? (kind === "yesno" ? ["Yes", "No"] : [])).map((label, value) => ({ value, label }));
+}
+
+/** Labels stored in polls.options and hashed into meta_hash. */
+function optionLabelsFor(kind: PollKind, labels: string[] | undefined): string[] | null {
+  if (kind === "rating") return null;
+  if (kind === "yesno") return ["Yes", "No"];
+  return (labels ?? []).map((l) => l.trim()).filter(Boolean).slice(0, 8);
+}
+
+function toGroup(g: GroupRow, viewer: string, adminName: string): Group {
+  return {
+    id: g.id,
+    chainGroupId: str(g.chain_group_id),
+    name: g.name,
+    description: g.description,
+    minMembers: g.min_members,
+    memberCount: g.member_count,
+    createdAt: g.created_at,
+    createdByName: adminName,
+    role: g.admin_user_id === viewer ? "admin" : "member",
+  };
+}
+
+function toPoll(p: PollRow): Poll {
+  return {
+    id: p.id,
+    chainPollId: str(p.chain_poll_id),
+    groupId: p.group_id,
+    title: p.title,
+    kind: p.kind,
+    options: optionsOf(p.kind, p.options),
+    opensAt: p.opens_at ?? p.created_at,
+    closesAt: p.closes_at,
+    hideLiveTally: p.hide_live_tally,
+    votersCount: p.voters_count,
+    frozenSize: p.frozen_size ?? 0,
+    status: p.status,
+    frozenRoot: p.frozen_root ? toHex32(p.frozen_root) : null,
+  };
+}
+
+function leadingOf(rows: PollResultRow[]): number[] {
+  const max = Math.max(0, ...rows.map((r) => r.count));
+  return max === 0 ? [] : rows.filter((r) => r.count === max).map((r) => r.value);
+}
+
+/** The admin's display name: members can only read their own roster row, so others get "". */
+async function adminNameOf(g: GroupRow, viewer: string): Promise<string> {
+  if (g.admin_user_id !== viewer) return "";
+  const res = await db().from("profiles").select("display_name").eq("id", viewer).maybeSingle();
+  return (res.data?.display_name as string | undefined) ?? "";
+}
+
+async function groupRow(groupId: string): Promise<GroupRow | null> {
+  return check(await db().from("groups").select(GROUP_COLS).eq("id", groupId).maybeSingle<GroupRow>());
+}
+
+async function requireAdmin(groupId: string): Promise<GroupRow & { chain_group_id: number | string }> {
+  const viewer = await uid();
+  const g = await groupRow(groupId);
+  if (!g) throw new NotFoundError("Group not found");
+  if (g.admin_user_id !== viewer) throw new ForbiddenError();
+  if (g.chain_group_id === null) throw new Error("The group is still being created on-chain");
+  return g as GroupRow & { chain_group_id: number | string };
+}
+
+// ---------------------------------------------------------------------------
+// Admin transactions (signed here, relayed by submit-admin-tx)
+// ---------------------------------------------------------------------------
+
+const toBase64Xdr = async (args: Parameters<Awaited<ReturnType<typeof loadSdk>>["vec"]>[0]) =>
+  (await loadSdk()).vec(args).toXDR("base64");
+
+const hex = (b: Uint8Array) => Array.from(b, (x) => x.toString(16).padStart(2, "0")).join("");
+
+/**
+ * POST to submit-admin-tx. `build` re-reads the nonce / next_group_id on every call, so a
+ * `409 stale_signature` is answered by re-signing (SDK submitAdminTx retries it).
+ */
+async function sendAdminTx(build: () => Promise<AdminTxBody>) {
+  const sdk = await loadSdk();
+  const { data } = await db().auth.getSession();
+  const accessToken = data.session?.access_token;
+  if (!accessToken) throw new ForbiddenError("Sign in first");
+  try {
+    return await sdk.submitAdminTx({
+      url: `${env.supabaseUrl}/functions/v1/submit-admin-tx`,
+      accessToken,
+      apiKey: env.supabaseAnonKey,
+      build,
+    });
+  } catch (e) {
+    if (e instanceof sdk.AdminTxError && e.code === "forbidden") throw new ForbiddenError(e.message);
+    if (e instanceof sdk.AdminTxError && e.code === "not_found") throw new NotFoundError(e.message);
+    throw e;
+  }
+}
+
+function shuffled<T>(items: T[]): T[] {
+  const out = items.slice();
+  for (let i = out.length - 1; i > 0; i--) {
+    const r = new Uint32Array(1);
+    crypto.getRandomValues(r);
+    const j = r[0]! % (i + 1);
+    [out[i], out[j]] = [out[j]!, out[i]!];
+  }
+  return out;
+}
+
+async function sha256Hex(s: string): Promise<string> {
+  return hex(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s))));
+}
+
+function randomToken(): string {
+  const b = new Uint8Array(24);
+  crypto.getRandomValues(b);
+  return btoa(String.fromCharCode(...b)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+const INVITE_ERRORS = new Set(["invite_not_found", "invite_expired", "invite_used_up", "membership_removed", "group_not_ready"]);
+
+// ---------------------------------------------------------------------------
+// Repository
+// ---------------------------------------------------------------------------
+
+export const supabaseRepository: LihimRepository = {
+  async getCurrentUser() {
+    const { data } = await db().auth.getSession();
+    const user = data.session?.user;
+    if (!user) return null;
+    const profile = await db().from("profiles").select("display_name").eq("id", user.id).maybeSingle();
+    return { userId: user.id, displayName: (profile.data?.display_name as string | undefined) ?? "" };
+  },
+
+  async listMyGroups() {
+    const viewer = await uid();
+    const groups = rowsOf(await db().from("groups").select(GROUP_COLS).returns<GroupRow[]>());
+    const open = rowsOf(
+      await db().from("polls").select("group_id").eq("status", "open").returns<{ group_id: string }[]>(),
+    );
+    return groups
+      .map((g) => ({
+        id: g.id,
+        name: g.name,
+        memberCount: g.member_count,
+        role: (g.admin_user_id === viewer ? "admin" : "member") as GroupRole,
+        openPollsCount: open.filter((p) => p.group_id === g.id).length,
+      }))
+      .sort((a, b) => b.openPollsCount - a.openPollsCount);
+  },
+
+  async getGroup(groupId) {
+    const viewer = await uid();
+    const g = await groupRow(groupId);
+    return g ? toGroup(g, viewer, await adminNameOf(g, viewer)) : null;
+  },
+
+  async createGroup(input) {
+    const viewer = await uid();
+    const sdk = await loadSdk();
+    // The browser picks groups.id: both per-group keys are derived from it (D1).
+    const id = sdk.newGroupUuid();
+    const admin = await groupAdminKey(id);
+    const semaphore = new sdk.LihimSemaphoreClient(network());
+
+    await sendAdminTx(async () => {
+      // Predicted on-chain id; a 409 stale_signature means it was taken, so re-read and re-sign.
+      const chainGroupId = await semaphore.getNextGroupId();
+      const args = sdk.signedAdminArgs(
+        {
+          contractId: semaphore.contractId,
+          fnTag: "create_group",
+          chainGroupId,
+          nonce: 0n,
+          args: sdk.adminArgs.create_group(admin.publicKey),
+          leadingArgs: [],
+        },
+        admin,
+      );
+      return {
+        action: "create_group",
+        group_id: id,
+        args_xdr: await toBase64Xdr(args),
+        group: {
+          name: input.name.trim(),
+          description: input.description.trim(),
+          min_members: input.minMembers,
+          admin_pubkey: hex(admin.publicKey),
+        },
+      };
+    });
+
+    // The admin's own commitment joins like everyone else's (queued, then batched and shuffled
+    // by addPendingMembers), so leaf 0 is not publicly "the admin". Fails while the create tx
+    // is still pending; addPendingMembers queues it later in that case.
+    await queueOwnCommitment(id).catch(() => undefined);
+
+    const g = await groupRow(id);
+    if (g) return toGroup(g, viewer, await adminNameOf(g, viewer));
+    return {
+      id,
+      chainGroupId: null,
+      name: input.name.trim(),
+      description: input.description.trim(),
+      minMembers: input.minMembers,
+      memberCount: 0,
+      createdAt: new Date().toISOString(),
+      createdByName: "",
+      role: "admin",
+    };
+  },
+
+  async getMembers(groupId) {
+    const g = await groupRow(groupId);
+    if (!g) throw new NotFoundError("Group not found");
+    if (g.admin_user_id !== (await uid())) throw new ForbiddenError();
+    const rows = rowsOf(
+      await db()
+        .from("group_members")
+        .select("user_id, display_name, joined_at, status")
+        .eq("group_id", groupId)
+        .eq("status", "active")
+        .order("joined_at")
+        .returns<{ user_id: string; display_name: string; joined_at: string; status: Member["status"] }[]>(),
+    );
+    return rows
+      .map((m) => ({
+        id: m.user_id,
+        displayName: m.display_name,
+        joinedAt: m.joined_at,
+        status: m.status,
+        isAdmin: m.user_id === g.admin_user_id,
+      }))
+      .sort((a, b) => Number(b.isAdmin) - Number(a.isAdmin));
+  },
+
+  async removeMember(groupId, memberId) {
+    // D5: off-chain deactivation only (see deactivate_member in the init migration).
+    const { error } = await db().rpc("deactivate_member", { group_id: groupId, user_id: memberId });
+    if (!error) return;
+    if (error.message.includes("member_not_found")) throw new NotFoundError("Member not found");
+    if (error.message.includes("cannot_remove_admin")) throw new ForbiddenError("The admin can't be removed");
+    if (error.message.includes("not_group_admin")) throw new ForbiddenError();
+    throw new Error(error.message);
+  },
+
+  async addPendingMembers(groupId) {
+    const g = await requireAdmin(groupId);
+    await queueOwnCommitment(groupId).catch(() => undefined);
+    const pending = rowsOf(
+      await db().from("pending_commitments").select("commitment").eq("group_id", groupId).returns<{ commitment: string }[]>(),
+    );
+    if (pending.length === 0) return 0;
+
+    const sdk = await loadSdk();
+    const admin = await groupAdminKey(groupId);
+    const semaphore = new sdk.LihimSemaphoreClient(network());
+    const chainGroupId = BigInt(g.chain_group_id);
+    // Shuffled so leaf order doesn't mirror join order.
+    const commitments = shuffled([...new Set(pending.map((p) => BigInt(p.commitment)))]);
+    // Chunks run one after another: each signs over the then-current nonce.
+    for (const chunk of sdk.chunkCommitments(commitments)) {
+      await sendAdminTx(async () => {
+        const nonce = await semaphore.getNonce(chainGroupId);
+        const args = sdk.signedAdminArgs(
+          {
+            contractId: semaphore.contractId,
+            fnTag: "add_members",
+            chainGroupId,
+            nonce,
+            args: sdk.adminArgs.add_members(chunk),
+            leadingArgs: [sdk.u64(chainGroupId)],
+          },
+          admin,
+        );
+        return { action: "add_members", group_id: groupId, args_xdr: await toBase64Xdr(args) };
+      });
+    }
+    return commitments.length;
+  },
+
+  async createInvite(groupId, input) {
+    await requireAdmin(groupId);
+    const token = randomToken();
+    const hours = input?.expiresInHours === undefined ? 24 * 7 : input.expiresInHours;
+    const expiresAt = hours === null ? null : new Date(Date.now() + hours * 3_600_000).toISOString();
+    const maxUses = input?.maxUses ?? 10_000;
+    const row = check(
+      await db()
+        .from("invites")
+        .insert({ group_id: groupId, token_hash: await sha256Hex(token), max_uses: maxUses, expires_at: expiresAt })
+        .select("id")
+        .single<{ id: string }>(),
+    );
+    const invite: Invite = {
+      id: row!.id,
+      groupId,
+      token,
+      url: `/join/${encodeURIComponent(token)}`,
+      maxUses: input?.maxUses ?? null,
+      uses: 0,
+      expiresAt,
+    };
+    return invite;
+  },
+
+  async getInvitePreview(token) {
+    const { data, error } = await db().rpc("invite_preview", { token });
+    if (error) throw new Error(error.message);
+    const row = (data as { group_id: string; group_name: string; member_count: number; invite_state: string }[] | null)?.[0];
+    if (!row) return null;
+    let alreadyMember = false;
+    const { data: auth } = await db().auth.getSession();
+    if (auth.session) {
+      const own = await db()
+        .from("group_members")
+        .select("status")
+        .eq("group_id", row.group_id)
+        .eq("user_id", auth.session.user.id)
+        .maybeSingle();
+      alreadyMember = own.data?.status === "active";
+    }
+    // invite_preview exposes only what joining needs; description/creator/expiry stay private.
+    return {
+      token,
+      groupId: row.group_id,
+      groupName: row.group_name,
+      description: "",
+      memberCount: row.member_count,
+      createdByName: "",
+      expiresAt: null,
+      valid: row.invite_state === "ok",
+      alreadyMember,
+    };
+  },
+
+  async redeemInvite(token) {
+    const viewer = await uid();
+    const profile = await db().from("profiles").select("display_name").eq("id", viewer).maybeSingle();
+    const displayName = ((profile.data?.display_name as string | undefined) ?? "").trim() || "Member";
+    const { data: groupId, error } = await db().rpc("redeem_invite", { token, display_name: displayName });
+    if (error) {
+      const code = [...INVITE_ERRORS].find((c) => error.message.includes(c));
+      if (code) throw new InviteError(code);
+      throw new Error(error.message);
+    }
+    // A separate call, so nothing ties "this user joined" to the commitment in one transaction.
+    await queueOwnCommitment(groupId as string);
+    return { groupId: groupId as string };
+  },
+
+  async listPolls(groupId) {
+    const rows = rowsOf(
+      await db().from("polls").select(POLL_COLS).eq("group_id", groupId).order("created_at", { ascending: false }).returns<PollRow[]>(),
+    );
+    return rows.map(toPoll);
+  },
+
+  async getPoll(pollId) {
+    const row = check(await db().from("polls").select(POLL_COLS).eq("id", pollId).maybeSingle<PollRow>());
+    return row ? toPoll(row) : null;
+  },
+
+  async createPoll(input) {
+    const g = await requireAdmin(input.groupId);
+    if (g.member_count < g.min_members) throw new SmallGroupError(g.member_count, g.min_members);
+    const labels = optionLabelsFor(input.kind, input.optionLabels);
+    if (input.kind === "single" && (labels?.length ?? 0) < 2) throw new Error("A single-choice poll needs at least 2 options");
+
+    const sdk = await loadSdk();
+    const admin = await groupAdminKey(input.groupId);
+    const polls = new sdk.LihimPollsClient(network());
+    const chainGroupId = BigInt(g.chain_group_id);
+    const title = input.title.trim();
+    const kind = input.kind === "single" ? { kind: "single" as const, options: labels!.length } : { kind: input.kind };
+    const closesAt = BigInt(Math.floor(Date.parse(input.closesAt) / 1000));
+    const metaHash = sdk.pollMetaHash(input.kind, title, labels);
+    // Same id on every retry, so a re-signed request updates the same draft row.
+    const pollId = crypto.randomUUID();
+
+    try {
+      await sendAdminTx(async () => {
+        const nonce = await polls.getNonce(chainGroupId);
+        const args = sdk.signedAdminArgs(
+          {
+            contractId: polls.contractId,
+            fnTag: "create_poll",
+            chainGroupId,
+            nonce,
+            args: sdk.adminArgs.create_poll(kind, closesAt, metaHash),
+            leadingArgs: [sdk.u64(chainGroupId)],
+          },
+          admin,
+        );
+        return {
+          action: "create_poll",
+          group_id: input.groupId,
+          args_xdr: await toBase64Xdr(args),
+          poll: {
+            id: pollId,
+            title,
+            kind: input.kind,
+            options: labels,
+            closes_at: new Date(Number(closesAt) * 1000).toISOString(),
+            hide_live_tally: input.hideLiveTally,
+          },
+        };
+      });
+    } catch (e) {
+      if (e instanceof sdk.AdminTxError && (e.code === "below_min_members" || e.contractErrorCode === 201)) {
+        throw new SmallGroupError(g.member_count, g.min_members);
+      }
+      throw e;
+    }
+    const poll = await this.getPoll(pollId);
+    if (!poll) throw new NotFoundError("Poll not found");
+    return poll;
+  },
+
+  async getFrozenCommitments(pollId) {
+    const { data, error } = await db().rpc("poll_frozen_commitments", { poll_id: pollId });
+    if (error) {
+      if (error.message.includes("poll_not_found")) throw new NotFoundError("Poll not found");
+      throw new Error(error.message);
+    }
+    if (data === null) throw new Error("The poll's member set isn't on the public record yet; try again shortly");
+    return (data as string[]).map((c) => BigInt(c));
+  },
+
+  async getResults(pollId) {
+    const poll = await this.getPoll(pollId);
+    if (!poll) throw new NotFoundError("Poll not found");
+    const hidden = poll.status !== "closed" && poll.hideLiveTally;
+    let rows: PollResultRow[] | null = null;
+    let average: number | null = null;
+    if (!hidden) {
+      const counts = rowsOf(
+        await db().from("poll_results").select("option_index, count").eq("poll_id", pollId).returns<{ option_index: number; count: number }[]>(),
+      );
+      const byValue = new Map(counts.map((c) => [c.option_index, c.count]));
+      rows = poll.options.map((o) => ({ ...o, count: byValue.get(o.value) ?? 0 }));
+      const total = rows.reduce((s, r) => s + r.count, 0);
+      if (poll.kind === "rating" && total > 0) average = rows.reduce((s, r) => s + r.value * r.count, 0) / total;
+    }
+    const result: PollResult = {
+      pollId,
+      status: poll.status,
+      votersCount: poll.votersCount,
+      frozenSize: poll.frozenSize,
+      hidden,
+      rows,
+      average,
+      leadingValues: rows ? leadingOf(rows) : [],
+    };
+    return result;
+  },
+
+  async getPollAudit(pollId) {
+    const row = check(
+      await db()
+        .from("public_poll_audit")
+        .select("poll_id, chain_poll_id, group_name, title, kind, options, closes_at, frozen_root, members_at_open, answers, votes")
+        .eq("poll_id", pollId)
+        .maybeSingle<{
+          poll_id: string;
+          chain_poll_id: number | string;
+          group_name: string;
+          title: string;
+          kind: PollKind;
+          options: string[] | null;
+          closes_at: string;
+          frozen_root: string | null;
+          members_at_open: number | null;
+          answers: number;
+          votes: { nullifier: string; choice: number }[];
+        }>(),
+    );
+    if (!row || !row.frozen_root) return null;
+    const options = optionsOf(row.kind, row.options);
+    const rows = row.votes.map((v) => ({ nullifier: toHex32(v.nullifier), choice: v.choice }));
+    const audit: PollAudit = {
+      pollId: row.poll_id,
+      chainPollId: String(row.chain_poll_id),
+      groupName: row.group_name,
+      title: row.title,
+      kind: row.kind,
+      options,
+      closedAt: row.closes_at,
+      frozenRoot: toHex32(row.frozen_root),
+      frozenSize: row.members_at_open ?? 0,
+      votersCount: row.answers,
+      tally: options.map((o) => ({ ...o, count: rows.filter((r) => r.choice === o.value).length })),
+      rows,
+      contractId: env.pollsContractId,
+    };
+    return audit;
+  },
+};
+
+/**
+ * Queue the viewer's commitment for this group unless it is already on-chain or queued. The
+ * on-chain check is a public read (no session); only an admin can see the queue, which is fine:
+ * a member's queued commitment is checked by submit_commitment's `on conflict do nothing`.
+ */
+async function queueOwnCommitment(groupId: string): Promise<void> {
+  const commitment = (await groupIdentity(groupId)).commitment;
+  const g = await groupRow(groupId);
+  if (g?.chain_group_id != null && env.semaphoreContractId) {
+    const sdk = await loadSdk();
+    const semaphore = new sdk.LihimSemaphoreClient(network());
+    if (await semaphore.isMember(BigInt(g.chain_group_id), commitment)) return;
+  }
+  const { error } = await db().rpc("submit_commitment", { group_id: groupId, commitment: commitment.toString() });
+  if (error) throw new Error(error.message);
+}

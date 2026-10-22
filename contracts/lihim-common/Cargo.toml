@@ -1,0 +1,19 @@
+[package]
+name = "lihim-common"
+description = "Shared types, cross-contract interfaces and admin-auth helpers for the Lihim contracts"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+crate-type = ["rlib"]
+doctest = false
+
+[dependencies]
+soroban-sdk = { workspace = true }
+ed25519-dalek = { workspace = true, optional = true }
+
+[features]
+# Test-only helpers (admin signing with an ed25519-dalek key).
+testutils = ["dep:ed25519-dalek", "soroban-sdk/testutils"]

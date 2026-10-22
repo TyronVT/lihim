@@ -1,0 +1,12 @@
+{
+  "name": "@lihim/supabase-tests",
+  "private": true,
+  "type": "module",
+  "description": "Runs the Supabase migrations + seed in PGlite with stubbed Supabase schemas and checks RLS and the privacy invariant.",
+  "scripts": {
+    "test": "node --test db.test.mjs"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.11"
+  }
+}
