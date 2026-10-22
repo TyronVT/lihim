@@ -1,0 +1,393 @@
+@import "tailwindcss";
+
+/*
+ * Lihim design tokens (lihim-DESIGN.md → Colour, Typography, Layout, Motion).
+ *
+ * Theme resolution:
+ *   - :root is dark (the brand default).
+ *   - With no explicit choice, prefers-color-scheme: light switches to light.
+ *   - The user override is the data-theme attribute on <html> ("light" | "dark"),
+ *     set before paint by the inline script in app/layout.tsx.
+ *
+ * Components reference SEMANTIC tokens only (via the Tailwind names below), never
+ * the ink ramp or raw hex.
+ */
+
+:root {
+  color-scheme: dark;
+
+  /* Graphite ramp, sampled from the icon sheet. Reference only from semantic tokens. */
+  --ink-950: #0a0b0d;
+  --ink-900: #141518;
+  --ink-850: #1c1d21;
+  --ink-800: #2c2d32;
+  --ink-700: #46474d;
+  --ink-600: #64656a;
+  --ink-400: #8c8c8f;
+  --ink-300: #b5b4b8;
+  --ink-100: #ececee;
+
+  /* Semantic: dark */
+  --bg: var(--ink-950);
+  --surface: var(--ink-900);
+  --surface-raised: var(--ink-850);
+  --border: var(--ink-800);
+  --border-control: #6a6b71;
+  --text-1: var(--ink-100);
+  --text-2: #a3a3a8;
+  --text-3: #88888e;
+  --primary-bg: var(--ink-100);
+  --primary-fg: var(--ink-950);
+  --accent: #c9c8cc;
+  --success: #7fc4a0;
+  --warning: #e0b66a;
+  --danger: #e08a7e;
+
+  /* Derived semantic tokens (so components never touch the ramp). */
+  --bar-track: var(--ink-800); /* Result bar track */
+  --bar-fill: var(--accent); /* Leading option */
+  --bar-fill-muted: var(--ink-600); /* Non-leading options */
+  --illustration-tile: transparent; /* Hero illustrations sit on ink-950 in light mode */
+  --illustration-tile-on: 0; /* 1 in light: Illustration adds tile padding */
+  --elevation: inset 0 1px 0 rgba(255, 255, 255, 0.04); /* Lit top edge, no drop shadow */
+  --overlay: rgba(10, 11, 13, 0.72); /* Sheet scrim */
+  --grain-opacity: 0.03;
+
+  /* Motion */
+  --motion-fast: 120ms;
+  --motion-base: 200ms;
+  --motion-slow: 320ms;
+  --ease-standard-curve: cubic-bezier(0.2, 0, 0, 1);
+
+  /* Layout */
+  --app-bar-height: 56px;
+  --footer-height: calc(48px + 32px + env(safe-area-inset-bottom));
+}
+
+/* Light theme values, written once and applied by two selectors below. */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    color-scheme: light;
+    --bg: #f6f6f7;
+    --surface: #ffffff;
+    --surface-raised: #ffffff;
+    --border: #e2e2e5;
+    --border-control: #85868c;
+    --text-1: #111214;
+    --text-2: #4e4f55;
+    --text-3: #6b6c72;
+    --primary-bg: #111214;
+    --primary-fg: #f6f6f7;
+    --accent: #2c2d32;
+    --success: #1f7a50;
+    --warning: #8a5a00;
+    --danger: #b23a2c;
+    --bar-track: #e2e2e5;
+    --bar-fill: #2c2d32;
+    --bar-fill-muted: #8c8c8f;
+    --illustration-tile: var(--ink-950);
+    --illustration-tile-on: 1;
+    --elevation: 0 1px 2px rgba(17, 18, 20, 0.06), 0 4px 12px rgba(17, 18, 20, 0.06);
+    --overlay: rgba(17, 18, 20, 0.4);
+    --grain-opacity: 0;
+  }
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f6f6f7;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --border: #e2e2e5;
+  --border-control: #85868c;
+  --text-1: #111214;
+  --text-2: #4e4f55;
+  --text-3: #6b6c72;
+  --primary-bg: #111214;
+  --primary-fg: #f6f6f7;
+  --accent: #2c2d32;
+  --success: #1f7a50;
+  --warning: #8a5a00;
+  --danger: #b23a2c;
+  --bar-track: #e2e2e5;
+  --bar-fill: #2c2d32;
+  --bar-fill-muted: #8c8c8f;
+  --illustration-tile: var(--ink-950);
+  --illustration-tile-on: 1;
+  --elevation: 0 1px 2px rgba(17, 18, 20, 0.06), 0 4px 12px rgba(17, 18, 20, 0.06);
+  --overlay: rgba(17, 18, 20, 0.4);
+  --grain-opacity: 0;
+}
+
+/* Tailwind mapping. `inline` so utilities resolve the live CSS var (theme switch needs no rebuild). */
+@theme inline {
+  /* No default palette: only Lihim's semantic colours exist as utilities. */
+  --color-*: initial;
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-border: var(--border);
+  --color-border-control: var(--border-control);
+  --color-text-1: var(--text-1);
+  --color-text-2: var(--text-2);
+  --color-text-3: var(--text-3);
+  --color-primary-bg: var(--primary-bg);
+  --color-primary-fg: var(--primary-fg);
+  --color-accent: var(--accent);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-bar-track: var(--bar-track);
+  --color-bar-fill: var(--bar-fill);
+  --color-bar-fill-muted: var(--bar-fill-muted);
+  --color-illustration-tile: var(--illustration-tile);
+  --color-overlay: var(--overlay);
+
+  --font-sans: var(--font-geist), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --shadow-raised: var(--elevation);
+}
+
+@theme {
+  /* Type scale (size / line-height / weight). Only these sizes exist. */
+  --text-*: initial;
+  --text-display: 28px;
+  --text-display--line-height: 34px;
+  --text-display--font-weight: 600;
+  --text-display--letter-spacing: -0.01em;
+  --text-title: 22px;
+  --text-title--line-height: 28px;
+  --text-title--font-weight: 600;
+  --text-title--letter-spacing: -0.01em;
+  --text-heading: 17px;
+  --text-heading--line-height: 24px;
+  --text-heading--font-weight: 600;
+  --text-heading--letter-spacing: -0.01em;
+  --text-body: 16px;
+  --text-body--line-height: 24px;
+  --text-label: 14px;
+  --text-label--line-height: 20px;
+  --text-label--font-weight: 500;
+  --text-caption: 13px;
+  --text-caption--line-height: 18px;
+  --text-mono: 13px;
+  --text-mono--line-height: 18px;
+  --text-overline: 11px;
+  --text-overline--line-height: 16px;
+  --text-overline--letter-spacing: 0.06em;
+  --text-overline--font-weight: 500;
+
+  /* Radius: 8 inputs/chips, 12 buttons/option rows, 16 cards/sheets. rounded-full stays built in. */
+  --radius-*: initial;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+
+  /* Spacing: base unit 4px (p-1=4 … p-14=56 covers the 4/8/12/16/20/24/32/40/56 scale). */
+  --spacing: 4px;
+  --spacing-gutter: 16px;
+  --spacing-card: 16px;
+  --spacing-card-gap: 12px;
+  --spacing-section: 32px;
+
+  /* Content widths */
+  --container-app: 480px;
+  --container-wide: 720px;
+
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+
+  --animate-rise-in: rise-in 320ms cubic-bezier(0.2, 0, 0, 1) both;
+  --animate-fade-in: fade-in 200ms cubic-bezier(0.2, 0, 0, 1) both;
+  --animate-bar-fill: bar-fill 320ms cubic-bezier(0.2, 0, 0, 1) both;
+  --animate-sheet-in: sheet-in 200ms cubic-bezier(0.2, 0, 0, 1) both;
+  --animate-sheet-out: sheet-out 200ms cubic-bezier(0.2, 0, 0, 1) both;
+  /* Proving line: fills to ~85% over the expected 1.5 s, then hands over to the sweep. */
+  --animate-progress-fill: progress-fill 1500ms ease-out both;
+  --animate-progress-sweep: progress-sweep 1200ms cubic-bezier(0.2, 0, 0, 1) 1500ms infinite both;
+
+  @keyframes rise-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes bar-fill {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
+  }
+  @keyframes sheet-in {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: none;
+    }
+  }
+  @keyframes sheet-out {
+    from {
+      transform: none;
+    }
+    to {
+      transform: translateY(100%);
+    }
+  }
+  @keyframes progress-fill {
+    0% {
+      transform: scaleX(0);
+      opacity: 1;
+    }
+    95% {
+      transform: scaleX(0.85);
+      opacity: 1;
+    }
+    100% {
+      transform: scaleX(0.85);
+      opacity: 0;
+    }
+  }
+  @keyframes progress-sweep {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(250%);
+    }
+  }
+}
+
+/* Display steps up once at ≥ 768 px (display only, per spec). */
+@media (min-width: 768px) {
+  :root {
+    --text-display: 32px;
+    --text-display--line-height: 38px;
+  }
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@utility duration-fast {
+  transition-duration: var(--motion-fast);
+}
+@utility duration-base {
+  transition-duration: var(--motion-base);
+}
+@utility duration-slow {
+  transition-duration: var(--motion-slow);
+}
+
+/* Bottom padding that clears a PinnedFooter. */
+@utility pb-footer {
+  padding-bottom: calc(var(--footer-height) + 16px);
+}
+@utility pb-safe {
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
+}
+
+@layer base {
+  html {
+    background-color: var(--bg);
+    color: var(--text-1);
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    min-height: 100dvh;
+    background-color: var(--bg);
+    color: var(--text-1);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 24px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /*
+   * Grain: tiled noise over --bg only. z-index -1 puts it under every in-flow box,
+   * so cards/sheets (which have their own background) cover it. Opacity is 0 in light.
+   */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image: url("/grain.png");
+    background-repeat: repeat;
+    background-size: 128px 128px;
+    opacity: var(--grain-opacity);
+  }
+
+  /* Focus ring is never removed. */
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background-color: var(--accent);
+    color: var(--bg);
+  }
+
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [role="radio"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+}
+
+/*
+ * Reduced motion: movement becomes a 120 ms opacity fade. The proving line is hidden
+ * by its component (motion-reduce:hidden) and replaced with a static "Proving…" label.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 120ms !important;
+    transition-property: opacity, color, background-color, border-color !important;
+  }
+  .animate-rise-in,
+  .animate-bar-fill,
+  .animate-sheet-in,
+  .animate-fade-in {
+    animation: fade-in 120ms ease-out both !important;
+  }
+  .animate-sheet-out {
+    animation: fade-out-reduced 120ms ease-out both !important;
+  }
+  .animate-progress-fill,
+  .animate-progress-sweep {
+    animation: none !important;
+  }
+}
+
+@keyframes fade-out-reduced {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}

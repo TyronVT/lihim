@@ -1,0 +1,78 @@
+# Supabase CLI config for local development (`supabase start`).
+# Hosted project settings (region, secrets) live in the dashboard; see README.md.
+
+project_id = "lihim"
+
+[api]
+enabled = true
+port = 54321
+# `private` is deliberately NOT exposed: RLS helper functions live there.
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 17
+
+[db.pooler]
+enabled = false
+
+[db.seed]
+enabled = true
+sql_paths = ["./seed.sql"]
+
+[realtime]
+enabled = true
+
+[studio]
+enabled = true
+port = 54323
+
+[inbucket]
+enabled = true
+port = 54324
+
+[storage]
+enabled = false
+
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["http://localhost:3000"]
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+refresh_token_reuse_interval = 10
+# Users never sign up with a password or email form; accounts are created by the
+# auth-passkey Edge Function through the admin API. Public signup stays off.
+enable_signup = false
+enable_anonymous_sign_ins = false
+
+[auth.email]
+enable_signup = false
+enable_confirmations = false
+
+[edge_runtime]
+enabled = true
+policy = "per_worker"
+deno_version = 2
+
+# Unauthenticated: the WebAuthn ceremony happens before a session exists.
+[functions.auth-passkey]
+verify_jwt = false
+
+# Authenticated: the function re-checks the caller is the group's admin in Postgres.
+[functions.submit-admin-tx]
+verify_jwt = true
+
+# Invoked by pg_cron through pg_net. Guarded by the x-lihim-cron shared secret
+# instead of a JWT so no service-role key has to sit in Vault.
+[functions.indexer]
+verify_jwt = false
+
+[functions.keeper]
+verify_jwt = false
+
+[functions.notify]
+verify_jwt = false

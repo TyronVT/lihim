@@ -1,0 +1,23 @@
+{
+  "name": "lihim",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*",
+    "supabase/tests"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "npm run build -w @lihim/sdk && npm run build -w @lihim/relay && npm run build -w @lihim/web",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "dev": "npm run dev -w @lihim/web",
+    "contracts:build": "cd contracts && stellar contract build",
+    "contracts:test": "cd contracts && cargo test",
+    "assets": "python3 -I design/scripts/export_assets.py"
+  }
+}
