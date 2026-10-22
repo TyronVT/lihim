@@ -38,6 +38,7 @@ export {
   adminArgs,
   encodeAdminArgs,
   signAdminCall,
+  signedAdminArgs,
   chunkCommitments,
   CONTRACT_ERRORS,
   parseContractErrorCode,
@@ -65,4 +66,13 @@ export {
   type RootRecord,
   type SendTx,
 } from "./contracts.js";
+export {
+  AdminTxError,
+  canonicalPollMeta,
+  pollMetaHash,
+  submitAdminTx,
+  type AdminTxBody,
+  type AdminTxResult,
+  type SubmitAdminTxOptions,
+} from "./admin-tx.js";
 export { TESTNET } from "./networks.js";

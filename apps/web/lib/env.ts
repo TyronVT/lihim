@@ -20,7 +20,7 @@ export const env = {
    * Dev builds also accept `?prover=sdk|mock` on the URL (see lib/prover.ts).
    */
   prover: (process.env.NEXT_PUBLIC_PROVER === "sdk" ? "sdk" : "mock") as "sdk" | "mock",
-  /** "mock" (default): lib/data/mock.ts. "supabase": lib/data/supabase.ts (skeleton). */
+  /** "mock" (default): lib/data/mock.ts. "supabase": lib/data/supabase.ts. */
   data: (process.env.NEXT_PUBLIC_DATA === "supabase" ? "supabase" : "mock") as "supabase" | "mock",
   devRoutes:
     process.env.NODE_ENV !== "production" || process.env.NEXT_PUBLIC_ENABLE_DEV_ROUTES === "1",

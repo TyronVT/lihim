@@ -36,6 +36,29 @@ export interface CastVoteOptions {
   prover?: ProverMode;
 }
 
+const frozenSets = new Map<string, Promise<bigint[]>>();
+
+/**
+ * Start loading the poll's frozen member set as soon as the vote screen opens (sdk prover only).
+ * The request goes out with the viewer's session, so it must not happen at the moment of voting:
+ * fetched on open, it reads like any other page load instead of "user X is about to answer P".
+ */
+export function prefetchVoteInputs(poll: Pick<Poll, "id" | "chainPollId">, prover?: ProverMode): void {
+  if (!poll.chainPollId || (prover ?? activeProverMode()) !== "sdk") return;
+  frozenCommitments(poll.id);
+}
+
+function frozenCommitments(pollId: string): Promise<bigint[]> {
+  let p = frozenSets.get(pollId);
+  if (!p) {
+    p = repo.getFrozenCommitments(pollId);
+    // Don't cache a failure; the next attempt refetches.
+    p.catch(() => frozenSets.delete(pollId));
+    frozenSets.set(pollId, p);
+  }
+  return p;
+}
+
 export async function castVote(
   poll: Pick<Poll, "id" | "groupId" | "chainPollId" | "frozenRoot">,
   choice: number,
@@ -57,7 +80,7 @@ export async function castVote(
         chainPollId,
         choice,
         frozenRoot,
-        loadCommitments: () => repo.getFrozenCommitments(poll.id),
+        loadCommitments: () => frozenCommitments(poll.id),
       },
       { signal: opts.signal, simulateMs: opts.simulateMs, mode },
     );

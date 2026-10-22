@@ -215,6 +215,14 @@ test('redeem_invite: rejects bad, expired and anonymous redemptions', async () =
   await rejects('anon', null, `select public.redeem_invite('demo-invite-token', 'x')`, [], /permission denied/);
 });
 
+test('poll_frozen_commitments: members get the leaf set at poll open; outsiders and anon do not', async () => {
+  const leaves = Array.from({ length: 9 }, (_, i) => String(1000000000000000000000n + BigInt(i + 1)));
+  const [{ c }] = await rows('authenticated', MEMBER, `select public.poll_frozen_commitments($1) as c`, [POLL_OPEN_HIDDEN]);
+  assert.deepEqual(c, leaves);
+  await rejects('authenticated', '00000000-0000-4000-8000-0000000000bb', `select public.poll_frozen_commitments($1)`, [POLL_OPEN_HIDDEN], /poll_not_found/);
+  await rejects('anon', null, `select public.poll_frozen_commitments($1)`, [POLL_OPEN_HIDDEN], /permission denied/);
+});
+
 test('submit_commitment: members queue a commitment the admin can read; nobody else can', async () => {
   const c = '12345678901234567890';
   await rows('authenticated', OUTSIDER, `select public.submit_commitment($1, $2)`, [GROUP, c]);

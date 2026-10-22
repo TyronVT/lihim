@@ -15,6 +15,7 @@ supabase/
     20261022000000_init.sql           enums, tables, RLS, RPCs, indexer RPCs, Realtime
     20261022000100_public_poll_audit.sql   L9 public view (closed polls only)
     20261022000200_schedules.sql      pg_net/pg_cron jobs, Vault-backed function calls, push trigger
+    20261022000300_poll_frozen_commitments.sql   frozen leaf set for the prover (members only)
   seed.sql                            demo group "UP Sining (demo)", 3 polls, synthetic events
   functions/
     deno.json                         nodeModulesDir "none" (ignore the npm workspace's node_modules), no lockfile
@@ -44,7 +45,10 @@ column-level part automatically.
       `pending_commitments` has no user column, no timestamp, and a random id;
       `submit_commitment()` writes nothing else in the same transaction (not even a
       "submitted" flag on the member's row, which would share a transaction id).
-      Rows are deleted once the commitment appears on-chain.
+      Rows are deleted once the commitment appears on-chain. This stops casual
+      joins, not the operator: `redeem_invite` and `submit_commitment` run back to
+      back, so transaction ids (`xmin`, WAL, backups) and request logs can still pair
+      a member with their commitment. Blind joins (below) are the real fix.
 - [ ] **`prf_out`, Semaphore identity secrets, admin Ed25519 private keys.**
       Never sent to any function. `groups.admin_pubkey` is the public key only.
 - [ ] **No vote ever touches Supabase.** No Edge Function accepts a proof.
@@ -98,6 +102,15 @@ and calls `submit_commitment(group_id, commitment)` → the admin's client reads
 `pending_commitments`, signs `add_members` (shuffle the batch) → `submit-admin-tx`
 → the indexer sees `members_added`, updates `member_count`/`chain_root` and deletes
 the queued rows. A member checks their own inclusion client-side (`is_member`).
+The web app sends the queue from L4 (`repo.addPendingMembers`) each time the admin
+opens the roster, and the admin's own commitment goes through the same queue, so
+leaf 0 is not publicly the admin's.
+
+**Vote (L6)** — `poll_frozen_commitments(poll_id)` (members only) replays the
+member events before `poll_created` and returns the frozen leaf set in leaf order
+(removed leaves `'0'`), which the browser needs to build the proof. The web app
+loads it when the poll screen opens, not when an answer is tapped, so the
+authenticated request doesn't sit a second before the vote lands on-chain.
 
 **Remove member (L4, D5)** — `deactivate_member(group_id, user_id)` (admin only).
 Off-chain only: the row becomes `removed`, so the person loses access to the group
@@ -196,7 +209,7 @@ alert if the indexer ever replays that group.
 No Supabase CLI or Deno install is required:
 
 ```sh
-npm test -w @lihim/supabase-tests      # from the repo root: migrations + seed in PGlite, 21 RLS/privacy checks
+npm test -w @lihim/supabase-tests      # from the repo root: migrations + seed in PGlite, 22 RLS/privacy checks
 cd supabase/functions && npx -y deno@2.9.6 check --no-lock */index.ts _shared/*.ts
 cd supabase/functions && npx -y deno@2.9.6 test --no-lock --allow-env _shared/shared_test.ts
 cd supabase/functions && npx -y deno@2.9.6 lint

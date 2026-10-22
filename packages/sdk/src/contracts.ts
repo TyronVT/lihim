@@ -153,6 +153,19 @@ export type AdminSignatureInput = {
   args: ScVal[];
 };
 
+/**
+ * Full argument list of a signed admin call: `[...leadingArgs, ...signedArgs, sig]` (`group_id`
+ * leads when the function takes one, `sig` is always last). As `vec(...)` XDR this is the
+ * `args_xdr` that `submit-admin-tx` accepts.
+ */
+export function signedAdminArgs(
+  input: AdminSignatureInput & { leadingArgs: ScVal[] },
+  admin: AdminKey,
+): ScVal[] {
+  const { sig } = signAdminCall(input, admin);
+  return [...input.leadingArgs, ...input.args, bytes(sig)];
+}
+
 /** Digest + Ed25519 signature for an admin call (INTERFACE.md §5.1). */
 export function signAdminCall(input: AdminSignatureInput, admin: AdminKey): { digest: Uint8Array; sig: Uint8Array } {
   const digest = adminMessage({
@@ -354,8 +367,11 @@ abstract class BaseClient {
     leadingArgs: ScVal[],
     admin: AdminKey,
   ): ContractFnCall {
-    const { sig } = signAdminCall({ contractId: this.contractId, fnTag, chainGroupId, nonce, args: signedArgs }, admin);
-    return { method: fnTag, args: [...leadingArgs, ...signedArgs, bytes(sig)] };
+    const args = signedAdminArgs(
+      { contractId: this.contractId, fnTag, chainGroupId, nonce, args: signedArgs, leadingArgs },
+      admin,
+    );
+    return { method: fnTag, args };
   }
 }
 

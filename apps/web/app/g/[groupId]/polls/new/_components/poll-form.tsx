@@ -175,11 +175,9 @@ export function PollForm({ group, backHref }: { group: Group; backHref: string }
   const create = async () => {
     if (closesAt === null) return;
     try {
-      // TODO(M0): real flow — derive the per-group admin Ed25519 key from the passkey PRF
-      // (HKDF info "lihim/admin/" + groups.id, the off-chain uuid — D1), sign the `create_poll`
-      // admin message (contracts/INTERFACE.md digest, on-chain u64 group id) in the browser,
-      // then send it via `submit-admin-tx`. The contract freezes
-      // the root + size and rejects when size < min_members.
+      // With NEXT_PUBLIC_DATA=supabase this signs `create_poll` with the per-group admin key and
+      // sends it via `submit-admin-tx` (lib/data/supabase.ts). The contract freezes the root +
+      // size and rejects when size < min_members (→ SmallGroupError).
       const poll = await repo.createPoll({
         groupId: group.id,
         title: title.trim(),

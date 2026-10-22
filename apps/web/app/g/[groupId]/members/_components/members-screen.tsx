@@ -1,7 +1,7 @@
 "use client";
 
 import { UserMinus } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AnonymityBanner,
   AppBar,
@@ -72,6 +72,22 @@ function Roster({ group, onChanged }: { group: Group; onChanged: () => void }) {
   // Target outlives `confirmOpen` so the sheet title doesn't blank out during its close animation.
   const [target, setTarget] = useState<Member | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+
+  // New members' commitments wait in a queue until the admin signs `add_members`; do it whenever
+  // the admin opens the roster. Quiet on failure: the queue keeps them for the next visit.
+  useEffect(() => {
+    let live = true;
+    repo.addPendingMembers(group.id).then(
+      (added) => {
+        if (live && added > 0) onChanged();
+      },
+      (e: unknown) => console.warn("[lihim/members] adding queued members failed:", e),
+    );
+    return () => {
+      live = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per group, not per parent render
+  }, [group.id]);
 
   const visible = useMemo(() => {
     if (members.status !== "success") return [];

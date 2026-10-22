@@ -2,7 +2,7 @@
  * In-memory demo repository with realistic Taglish data. State lives for the page
  * session (module scope); a full reload resets it.
  *
- * TODO: replace with lib/data/supabase.ts (see lib/data/index.ts). Keep this file for
+ * The default data layer (NEXT_PUBLIC_DATA=mock); lib/data/supabase.ts is the real one. Kept for
  * /dev/components, tests and offline UI work.
  *
  * Demo cast — the viewer is "Ana Reyes":
@@ -480,6 +480,13 @@ export const mockRepository: LihimRepository = {
     if (m.isAdmin) throw new ForbiddenError("The admin can't be removed");
     m.status = "removed";
     syncCount(g);
+  },
+
+  async addPendingMembers(groupId) {
+    await delay(200);
+    requireAdmin(groupId);
+    // Mock joins land instantly (redeemInvite bumps memberCount), so nothing is ever queued.
+    return 0;
   },
 
   async createInvite(groupId, input) {

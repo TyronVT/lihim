@@ -23,7 +23,7 @@ import { useQuery } from "@/lib/data/hooks";
 import { env } from "@/lib/env";
 import { formatClosing } from "@/lib/format";
 import { pollDisplayStatus } from "@/lib/poll";
-import { castVote } from "@/lib/vote";
+import { castVote, prefetchVoteInputs } from "@/lib/vote";
 import { PollLoadError, PollLoading, PollNotFound } from "./states";
 
 /**
@@ -49,6 +49,8 @@ interface VoteData {
 async function loadVote(pollId: string): Promise<VoteData | null> {
   const poll = await repo.getPoll(pollId);
   if (!poll) return null;
+  // Load the frozen member set with the page, not when the answer is tapped (lib/vote.ts).
+  if (poll.status === "open") prefetchVoteInputs(poll);
   const group = await repo.getGroup(poll.groupId);
   // Read device memory inside the query (client-only, after hydration) rather than in render.
   return { poll, group, answeredBefore: hasAnswered(poll.id) };

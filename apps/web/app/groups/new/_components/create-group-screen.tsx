@@ -67,11 +67,9 @@ function CreateForm({ onCreated }: { onCreated: (c: Created) => void }) {
   const [showErrors, setShowErrors] = useState(false);
 
   const create = useMutation(async () => {
-    // TODO(M0): real flow (orchestrator D1) — the browser generates groups.id (uuid) first;
-    // passkey PRF → per-group admin Ed25519 key (HKDF info "lihim/admin/" + groups.id); sign
-    // `create_group` (contracts/INTERFACE.md digest) over the PREDICTED on-chain u64 id
-    // (semaphore.next_group_id(), nonce 0; retry if taken) and send via `submit-admin-tx`.
-    // The admin then joins with their own commitment ("lihim/sem/" + groups.id).
+    // With NEXT_PUBLIC_DATA=supabase this picks groups.id in the browser, signs `create_group`
+    // with the per-group admin key over the predicted next_group_id (re-signing on 409
+    // stale_signature) and queues the admin's own commitment (lib/data/supabase.ts).
     const group = await repo.createGroup({ name: name.trim(), description: description.trim(), minMembers });
     // The group exists even if the link fails; the admin can mint one from L3.
     const invite = await repo

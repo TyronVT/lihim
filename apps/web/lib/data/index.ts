@@ -4,16 +4,17 @@
  *
  * Implementation is picked at build time by NEXT_PUBLIC_DATA:
  * - "mock" (default): lib/data/mock.ts, in-memory demo data.
- * - "supabase": lib/data/supabase.ts — a SKELETON against the RLS'd tables/RPCs/views in
- *   supabase/README.md. Needs @supabase/supabase-js (not installed yet; see that file).
- * Admin mutations (createGroup, createPoll) sign in the browser with the per-group admin key
+ * - "supabase": lib/data/supabase.ts, against the RLS'd tables/RPCs/views in supabase/README.md.
+ * Admin mutations (createGroup, createPoll, addPendingMembers) sign in the browser with the per-group admin key
  * and go through the `submit-admin-tx` Edge Function.
  *
  * The vote path is NOT here on purpose: it goes through lib/vote.ts → lib/relay.ts
  * (plain fetch, separate origin, no session). `getFrozenCommitments` is public-record data
  * the prover needs; it never involves the viewer's identity.
  */
+import { env } from "../env";
 import { mockRepository } from "./mock";
+import { supabaseRepository } from "./supabase";
 import type {
   CreateGroupInput,
   CreateInviteInput,
@@ -50,6 +51,12 @@ export interface LihimRepository {
    * they know), so it does not shrink the anonymity set.
    */
   removeMember(groupId: string, memberId: string): Promise<void>;
+  /**
+   * Admin only. Signs `add_members` for every queued commitment (shuffled, in MAX_BATCH chunks)
+   * so new members land in the on-chain tree. Also queues the admin's own commitment if it
+   * isn't on-chain yet. Resolves to the number of commitments sent (0 when the queue is empty).
+   */
+  addPendingMembers(groupId: string): Promise<number>;
 
   /** Admin only. */
   createInvite(groupId: string, input?: CreateInviteInput): Promise<Invite>;
@@ -79,5 +86,4 @@ export interface LihimRepository {
   getPollAudit(pollId: string): Promise<PollAudit | null>;
 }
 
-// TODO: lib/data/supabase.ts is not written yet; NEXT_PUBLIC_DATA=supabase falls back to mock until it is.
-export const repo: LihimRepository = mockRepository;
+export const repo: LihimRepository = env.data === "supabase" ? supabaseRepository : mockRepository;
