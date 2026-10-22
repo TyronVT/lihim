@@ -191,7 +191,10 @@ export interface PollAudit {
   frozenRoot: Hex32;
   frozenSize: number;
   votersCount: number;
-  /** Recounted from rows, in option order. */
+  /**
+   * The tally Lihim publishes (what L7 shows, poll_results), in option order. L9 recounts `rows`
+   * on the device and compares the two (mismatch state).
+   */
   tally: PollResultRow[];
   rows: AuditRow[];
   contractId: string;

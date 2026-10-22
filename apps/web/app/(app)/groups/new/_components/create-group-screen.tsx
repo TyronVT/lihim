@@ -7,6 +7,7 @@ import {
   AppBar,
   Button,
   Card,
+  HIDE_IN_SHELL_LG,
   Icon,
   Notice,
   PageHeader,
@@ -14,19 +15,23 @@ import {
   Screen,
   Section,
   SegmentedControl,
+  ShellHeader,
   Stepper,
   TextArea,
   TextField,
   notify,
+  useShell,
 } from "@/components";
 import { copy } from "@/lib/copy";
 import { repo, type Group, type Invite } from "@/lib/data";
 import { useMutation } from "@/lib/data/hooks";
 import { formatWhen } from "@/lib/format";
+import { cn } from "@/lib/cn";
 import { DEFAULT_MIN_MEMBERS, MIN_MIN_MEMBERS } from "@/lib/poll";
 
 const FORM_ID = "create-group-form";
 const NAME_ID = "group-name";
+const FAILED_ID = "create-group-failed";
 const NAME_MAX = 60;
 const DESCRIPTION_MAX = 200;
 /** Upper bound for the stepper; a bigger floor would just block polls in most orgs. */
@@ -58,7 +63,36 @@ export function CreateGroupScreen() {
   return created ? <Ready created={created} /> : <CreateForm onCreated={setCreated} />;
 }
 
+/**
+ * ≥ 1280 rail (spec L1 "Expanded"): a static "How groups work" card. Below that it is hidden
+ * (Screen railFrom="xl"); the hint under each field already says the same thing.
+ */
+function HowGroupsWork() {
+  const items = [
+    { icon: "anonymous", title: copy.createGroup.howWhoTitle, body: copy.createGroup.howWhoBody },
+    { icon: "members", title: copy.createGroup.howMinTitle, body: copy.createGroup.howMinBody },
+    { icon: "invite", title: copy.createGroup.howInviteTitle, body: copy.createGroup.howInviteBody },
+  ] as const;
+  return (
+    <Card className="flex flex-col gap-4">
+      <h2 className="text-heading text-text-1">{copy.createGroup.howTitle}</h2>
+      <ul className="flex flex-col gap-4">
+        {items.map((item) => (
+          <li key={item.title} className="flex items-start gap-3">
+            <Icon icon={item.icon} className="mt-0.5 shrink-0 text-text-2" />
+            <div className="flex flex-col gap-1">
+              <h3 className="text-label font-medium text-text-1">{item.title}</h3>
+              <p className="text-label text-text-2">{item.body}</p>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </Card>
+  );
+}
+
 function CreateForm({ onCreated }: { onCreated: (c: Created) => void }) {
+  const { refreshGroups } = useShell();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [minMembers, setMinMembers] = useState(DEFAULT_MIN_MEMBERS);
@@ -91,17 +125,41 @@ function CreateForm({ onCreated }: { onCreated: (c: Created) => void }) {
       return;
     }
     try {
-      onCreated(await create.run());
+      const result = await create.run();
+      // The sidebar lists the new group straight away (≥ lg).
+      refreshGroups();
+      onCreated(result);
     } catch {
-      // create.error drives the Notice below.
+      // create.error drives the Notice below. At ≥ lg the button is up in the page header,
+      // so bring the error into view.
+      requestAnimationFrame(() => document.getElementById(FAILED_ID)?.scrollIntoView({ block: "nearest" }));
     }
   };
+
+  const primary = (
+    <Button type="submit" form={FORM_ID} loading={create.pending} loadingLabel={copy.createGroup.creating}>
+      {copy.group.create}
+    </Button>
+  );
 
   return (
     <>
       <AppBar title={copy.createGroup.title} backHref="/" />
-      <Screen withFooter>
-        <PageHeader illustration="group" illustrationSize={64} title={copy.createGroup.heading} description={copy.createGroup.intro} />
+      <Screen
+        withFooter
+        width="form"
+        header={<ShellHeader title={copy.createGroup.title} context={copy.createGroup.intro} actions={primary} />}
+        rail={<HowGroupsWork />}
+        railFrom="xl"
+      >
+        {/* At ≥ lg the page header carries the title and intro; no hero above the form there. */}
+        <PageHeader
+          illustration="group"
+          illustrationSize={64}
+          title={copy.createGroup.heading}
+          description={copy.createGroup.intro}
+          className={HIDE_IN_SHELL_LG}
+        />
 
         <form id={FORM_ID} noValidate onSubmit={onSubmit} className="flex flex-col gap-section">
           <fieldset disabled={create.pending} className="flex min-w-0 flex-col gap-6">
@@ -158,27 +216,42 @@ function CreateForm({ onCreated }: { onCreated: (c: Created) => void }) {
             </fieldset>
           </Section>
 
-          {create.error !== undefined && <Notice tone="danger" title={copy.createGroup.failed} />}
+          {/* S5: inline, right above the (pinned) button, with its own way to try again. */}
+          {create.error !== undefined && (
+            <div id={FAILED_ID}>
+              <Notice
+                tone="danger"
+                title={copy.createGroup.failed}
+                action={
+                  <Button type="submit" variant="secondary">
+                    {copy.common.retry}
+                  </Button>
+                }
+              />
+            </div>
+          )}
         </form>
       </Screen>
-      <PinnedFooter>
-        <Button type="submit" form={FORM_ID} loading={create.pending} loadingLabel={copy.createGroup.creating}>
-          {copy.group.create}
-        </Button>
-      </PinnedFooter>
+      <PinnedFooter>{primary}</PinnedFooter>
     </>
   );
 }
 
 function Ready({ created }: { created: Created }) {
   const { group, invite } = created;
-  const heading = useRef<HTMLHeadingElement>(null);
+  // The title lives in the in-content header below lg and in the page header at ≥ lg.
+  const heading = useRef<HTMLSpanElement>(null);
+  const shellHeading = useRef<HTMLSpanElement>(null);
   const [canShare] = useState(() => typeof navigator !== "undefined" && typeof navigator.share === "function");
   // Ready only ever renders after a client-side submit, so window is always defined here.
   const url = invite ? new URL(invite.url, window.location.origin).toString() : "";
 
   // Move focus to the new heading so screen readers land on the result, not a stale field.
-  useEffect(() => heading.current?.focus(), []);
+  // Only one of the two is displayed (the other is display: none, so it has no offsetParent).
+  useEffect(() => {
+    const visible = [shellHeading.current, heading.current].find((el) => el?.offsetParent);
+    visible?.focus();
+  }, []);
 
   const copyLink = async () => {
     try {
@@ -198,12 +271,31 @@ function Ready({ created }: { created: Created }) {
   };
 
   const groupHref = `/g/${encodeURIComponent(group.id)}`;
+  const primary = (
+    <Button asChild>
+      <Link href={groupHref}>{copy.createGroup.goToGroup}</Link>
+    </Button>
+  );
 
   return (
     <>
       <AppBar title={copy.createGroup.title} backHref="/" />
-      <Screen withFooter>
-        <div role="status" className="flex animate-rise-in flex-col gap-3">
+      <Screen
+        withFooter
+        width="form"
+        header={
+          <ShellHeader
+            title={
+              <span ref={shellHeading} tabIndex={-1}>
+                {copy.createGroup.readyTitle(group.name)}
+              </span>
+            }
+            context={copy.createGroup.readyBody}
+            actions={primary}
+          />
+        }
+      >
+        <div role="status" className={cn("flex animate-rise-in flex-col gap-3", HIDE_IN_SHELL_LG)}>
           <PageHeader
             illustration="group"
             illustrationSize={64}
@@ -255,11 +347,7 @@ function Ready({ created }: { created: Created }) {
           <span className="tabular">{copy.createGroup.readyMin(group.minMembers)}</span>
         </p>
       </Screen>
-      <PinnedFooter>
-        <Button asChild>
-          <Link href={groupHref}>{copy.createGroup.goToGroup}</Link>
-        </Button>
-      </PinnedFooter>
+      <PinnedFooter>{primary}</PinnedFooter>
     </>
   );
 }

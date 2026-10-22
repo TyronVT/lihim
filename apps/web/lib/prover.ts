@@ -15,6 +15,7 @@
  */
 import type { Prover } from "@lihim/sdk/prover";
 import { env } from "./env";
+import { mockFailure } from "./data/mock";
 import { groupIdentity, loadSdk } from "./identity";
 import type { LihimProof, SerializedProof } from "./proof";
 import { serializeProof as serializeMockProof } from "./proof";
@@ -177,6 +178,12 @@ async function proveMock(req: ProveVoteRequest, opts: ProveOptions): Promise<Lih
       { once: true },
     );
   });
+  // ?mockFail=vote-late: as if the viewer joined after the poll opened (SDK NotAMemberError).
+  if (mockFailure() === "vote-late") {
+    const e = new Error("Not in this poll's member set");
+    e.name = "NotAMemberError";
+    throw e;
+  }
   return {
     depth: 5,
     root: BigInt(req.frozenRoot),

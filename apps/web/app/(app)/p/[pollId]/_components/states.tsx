@@ -1,15 +1,26 @@
 "use client";
 
 import Link from "next/link";
-import { AppBar, Button, EmptyState, Notice, Screen, Skeleton } from "@/components";
+import { AppBar, Button, EmptyState, Notice, Screen, ShellHeader, Skeleton, type ScreenWidth } from "@/components";
 import { copy } from "@/lib/copy";
 
-/** Static placeholder shaped like the question + options, so the layout doesn't jump. */
-export function PollLoading({ title }: { title?: string }) {
+/**
+ * Static placeholder shaped like the question + options, so the layout doesn't jump. At ≥ lg the
+ * header band gets placeholder bars too (L6 answers in the 560 `form` column, L7 in `page`).
+ */
+export function PollLoading({ title, width }: { title?: string; width?: ScreenWidth }) {
   return (
     <>
       <AppBar title={title} backHref="/" />
-      <Screen>
+      <Screen
+        width={width}
+        header={
+          <div aria-hidden className="flex flex-col gap-3">
+            <Skeleton className="h-5 w-28" />
+            <Skeleton className="h-8 w-2/3" />
+          </div>
+        }
+      >
         <div role="status" className="flex flex-col gap-3">
           <span className="sr-only">{copy.common.loading}</span>
           <Skeleton className="h-6 w-24 rounded-full" />
@@ -30,7 +41,7 @@ export function PollNotFound() {
   return (
     <>
       <AppBar backHref="/" />
-      <Screen className="pt-10">
+      <Screen className="pt-10" header={<ShellHeader title={copy.poll.title} />}>
         <EmptyState
           illustration="mark"
           title={copy.errors.notFound}
@@ -50,7 +61,7 @@ export function PollLoadError({ onRetry }: { onRetry: () => void }) {
   return (
     <>
       <AppBar backHref="/" />
-      <Screen>
+      <Screen header={<ShellHeader title={copy.poll.title} />}>
         <Notice
           tone="danger"
           title={copy.errors.generic}

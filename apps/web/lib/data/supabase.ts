@@ -20,7 +20,7 @@ import { toHex32 } from "../format";
 import { groupAdminKey, groupIdentity, loadSdk, setPrfOutput } from "../identity";
 import { passkeySignIn, passkeySignUp, type PasskeyResult } from "../passkey";
 import type { LihimRepository } from "./index";
-import { ForbiddenError, InviteError, NotFoundError, PollClosingPassedError, SmallGroupError } from "./errors";
+import { ForbiddenError, InviteError, NotFoundError, PollClosingPassedError, PollNotOpenedError, SmallGroupError } from "./errors";
 import type {
   ActiveInvite,
   CurrentUser,
@@ -632,13 +632,20 @@ export const supabaseRepository: LihimRepository = {
     if (input.kind === "single" && (labels?.length ?? 0) < 2) throw new Error("A single-choice poll needs at least 2 options");
     // Same id on every retry (and on retryPoll), so a re-signed request updates the same draft row.
     const pollId = crypto.randomUUID();
-    await sendCreatePoll(g, pollId, {
-      title: input.title.trim(),
-      kind: input.kind,
-      labels,
-      closesAt: input.closesAt,
-      hideLiveTally: input.hideLiveTally,
-    });
+    try {
+      await sendCreatePoll(g, pollId, {
+        title: input.title.trim(),
+        kind: input.kind,
+        labels,
+        closesAt: input.closesAt,
+        hideLiveTally: input.hideLiveTally,
+      });
+    } catch (e) {
+      // submit-admin-tx writes the draft row before sending: if it exists, it's now "Didn't open".
+      const draft = await this.getPoll(pollId).catch(() => null);
+      if (draft?.status === "draft") throw new PollNotOpenedError(pollId, { cause: e });
+      throw e;
+    }
     const poll = await this.getPoll(pollId);
     if (!poll) throw new NotFoundError("Poll not found");
     return poll;
@@ -723,7 +730,7 @@ export const supabaseRepository: LihimRepository = {
     const row = check(
       await db()
         .from("public_poll_audit")
-        .select("poll_id, chain_poll_id, group_name, title, kind, options, closes_at, frozen_root, members_at_open, answers, votes")
+        .select("poll_id, chain_poll_id, group_name, title, kind, options, closes_at, frozen_root, members_at_open, answers, votes, cached_tally")
         .eq("poll_id", pollId)
         .maybeSingle<{
           poll_id: string;
@@ -737,6 +744,7 @@ export const supabaseRepository: LihimRepository = {
           members_at_open: number | null;
           answers: number;
           votes: { nullifier: string; choice: number }[];
+          cached_tally: Record<string, number>;
         }>(),
     );
     if (!row || !row.frozen_root) return null;
@@ -753,7 +761,8 @@ export const supabaseRepository: LihimRepository = {
       frozenRoot: toHex32(row.frozen_root),
       frozenSize: row.members_at_open ?? 0,
       votersCount: row.answers,
-      tally: options.map((o) => ({ ...o, count: rows.filter((r) => r.choice === o.value).length })),
+      // What L7 shows (poll_results). L9 recounts `rows` itself and compares against this.
+      tally: options.map((o) => ({ ...o, count: row.cached_tally[String(o.value)] ?? 0 })),
       rows,
       contractId: env.pollsContractId,
     };

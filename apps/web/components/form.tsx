@@ -58,22 +58,39 @@ export interface TextFieldProps extends Omit<InputHTMLAttributes<HTMLInputElemen
   hint?: ReactNode;
   error?: ReactNode;
   counter?: ReactNode;
+  /**
+   * Decoration inside the input's right edge, e.g. L4's "/" key hint. Not interactive; hidden from
+   * AT. Pad the input to match where it shows (`className="lg:[&_input]:pr-12"`).
+   */
+  end?: ReactNode;
   ref?: Ref<HTMLInputElement>;
 }
 
 /** Single-line input, 48 px tall, radius 8, 16 px text. */
-export function TextField({ label, hint, error, counter, id: idProp, className, ...rest }: TextFieldProps) {
+export function TextField({ label, hint, error, counter, end, id: idProp, className, ...rest }: TextFieldProps) {
   const auto = useId();
   const id = idProp ?? auto;
+  const input = (
+    <input
+      id={id}
+      aria-invalid={error ? true : undefined}
+      aria-describedby={describedBy(id, hint, error)}
+      className={cn(controlBase, "h-12")}
+      {...rest}
+    />
+  );
   return (
     <Field id={id} label={label} hint={hint} error={error} counter={counter} className={className}>
-      <input
-        id={id}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={describedBy(id, hint, error)}
-        className={cn(controlBase, "h-12")}
-        {...rest}
-      />
+      {end != null ? (
+        <div className="relative">
+          {input}
+          <span aria-hidden className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
+            {end}
+          </span>
+        </div>
+      ) : (
+        input
+      )}
     </Field>
   );
 }

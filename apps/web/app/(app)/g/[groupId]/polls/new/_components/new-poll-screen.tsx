@@ -1,6 +1,6 @@
 "use client";
 
-import { AppBar, Screen } from "@/components";
+import { AppBar, Screen, ShellHeader } from "@/components";
 import { copy } from "@/lib/copy";
 import { repo } from "@/lib/data";
 import { useQuery } from "@/lib/data/hooks";
@@ -20,7 +20,15 @@ export function NewPollScreen({ groupId }: { groupId: string }) {
   return (
     <>
       <AppBar title={copy.newPoll.title} backHref={backHref} />
-      <Screen>
+      <Screen
+        width="form"
+        header={
+          <ShellHeader
+            back={{ href: backHref, label: group.status === "success" && group.data ? group.data.name : copy.common.back }}
+            title={copy.newPoll.title}
+          />
+        }
+      >
         {group.status === "loading" ? (
           <GroupLoading />
         ) : group.status === "error" ? (

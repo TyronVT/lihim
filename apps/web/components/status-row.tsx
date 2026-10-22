@@ -15,6 +15,11 @@ export interface StatusRowProps {
   action?: ReactNode;
   /** Right slot, e.g. an OverflowMenu with "Discard" (P6). */
   trailing?: ReactNode;
+  /**
+   * "danger" (default) colours a failed row's title; "neutral" keeps it --text-1 when the title is a
+   * name (L3: the poll title) and a pill in `body` already says "Didn't open".
+   */
+  failedTitle?: "danger" | "neutral";
   className?: string;
 }
 
@@ -26,7 +31,7 @@ export interface StatusRowProps {
  * - done    → --success check + words.
  * - failed  → --danger icon + title, body, and the action button; announced as an alert.
  */
-export function StatusRow({ state, title, body, action, trailing, className }: StatusRowProps) {
+export function StatusRow({ state, title, body, action, trailing, failedTitle = "danger", className }: StatusRowProps) {
   return (
     <div
       role={state === "failed" ? "alert" : "status"}
@@ -40,7 +45,7 @@ export function StatusRow({ state, title, body, action, trailing, className }: S
         {state === "done" && <Icon icon={CircleCheck} className="mt-0.5 shrink-0 text-success" />}
         {state === "failed" && <Icon icon={CircleAlert} className="mt-0.5 shrink-0 text-danger" />}
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <p className={cn("text-body font-medium break-words", state === "failed" ? "text-danger" : "text-text-1")}>{title}</p>
+          <p className={cn("text-body font-medium break-words", state === "failed" && failedTitle === "danger" ? "text-danger" : "text-text-1")}>{title}</p>
           {body && <p className="text-caption text-text-2">{body}</p>}
         </div>
         {trailing && <div className="-my-2 -mr-2 shrink-0">{trailing}</div>}

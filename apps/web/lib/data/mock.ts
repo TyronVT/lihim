@@ -20,7 +20,10 @@
  *
  * Failure states on demand (dev only): add `?mockFail=<kind>` to the page URL.
  * - cancelled | no-passkey | unsupported → signIn/signUp reject with the matching Passkey*Error.
- * - poll → createPoll/retryPoll leave the poll as "Didn't open" and reject.
+ * - poll → createPoll/retryPoll leave the poll as "Didn't open" and reject (PollNotOpenedError).
+ * - vote-network → L6: the relay can't be reached (nothing recorded, "Send answer" retries).
+ * - vote-late → L6: the proof fails as "not in this poll's member list" (joined after it opened).
+ * - mismatch → L9: the published tally disagrees with the recount by one answer.
  * The seeded "Officer evaluation: Treasurer" draft is always in the failed state.
  *
  * Group ids are fixed uuids (MOCK_GROUP_IDS) because, like Supabase groups.id, they are the
@@ -38,6 +41,7 @@ import {
   PasskeyNotFoundError,
   PasskeyUnsupportedError,
   PollClosingPassedError,
+  PollNotOpenedError,
   SmallGroupError,
 } from "./errors";
 import type {
@@ -132,13 +136,14 @@ function setSignedOut(out: boolean) {
   }
 }
 
-type MockFailure = "cancelled" | "no-passkey" | "unsupported" | "poll";
+const MOCK_FAILURES = ["cancelled", "no-passkey", "unsupported", "poll", "vote-network", "vote-late", "mismatch"] as const;
+export type MockFailure = (typeof MOCK_FAILURES)[number];
 
-/** `?mockFail=<kind>` on the current page URL (dev aid; see the header). */
-function mockFailure(): MockFailure | null {
+/** `?mockFail=<kind>` on the current page URL (dev aid; see the header). Also read by lib/relay and lib/prover's mocks. */
+export function mockFailure(): MockFailure | null {
   if (typeof window === "undefined") return null;
   const v = new URLSearchParams(window.location.search).get("mockFail");
-  return v === "cancelled" || v === "no-passkey" || v === "unsupported" || v === "poll" ? v : null;
+  return (MOCK_FAILURES as readonly string[]).includes(v ?? "") ? (v as MockFailure) : null;
 }
 
 /** The simulated passkey prompt shared by signIn/signUp. */
@@ -740,7 +745,8 @@ export const mockRepository: LihimRepository = {
       createdByName: g.createdByName,
       expiresAt: inv.expiresAt,
       valid: inviteWorks(inv),
-      alreadyMember: isMember(g),
+      // Nobody is known to be a member before signing in.
+      alreadyMember: !isSignedOut() && isMember(g),
     };
     return preview;
   },
@@ -811,7 +817,7 @@ export const mockRepository: LihimRepository = {
       ledger: [],
     });
     const p = polls.get(id)!;
-    if (!sendCreateTx(p)) throw new Error("Mock: create_poll not sent (?mockFail=poll)");
+    if (!sendCreateTx(p)) throw new PollNotOpenedError(id);
     return toPoll(p);
   },
 
@@ -878,10 +884,16 @@ export const mockRepository: LihimRepository = {
       frozenRoot: p.frozenRoot,
       frozenSize: p.frozenSize,
       votersCount: p.ledger.length,
-      tally: tallyOf(p),
+      // What L7 shows (the cached tally); ?mockFail=mismatch makes it disagree with the rows.
+      tally: mockFailure() === "mismatch" ? skewed(tallyOf(p)) : tallyOf(p),
       rows: clone(p.ledger),
       contractId: "CDLIHIMPOLLSDEMOCONTRACTXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
     };
     return audit;
   },
 };
+
+/** ?mockFail=mismatch: one answer moved from the first option to the second. */
+function skewed(rows: PollResultRow[]): PollResultRow[] {
+  return rows.map((r, i) => ({ ...r, count: i === 0 ? r.count + 1 : i === 1 ? Math.max(0, r.count - 1) : r.count }));
+}

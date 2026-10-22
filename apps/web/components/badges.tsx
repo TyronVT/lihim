@@ -44,20 +44,29 @@ export interface CountBadgeProps {
   count: number;
   /** Accessible words for the number, e.g. copy.shell.openPollsBadge(2) → "2 open polls". */
   label: string;
+  /** Show `label` itself in the pill ("2 open polls", Home rows) instead of the bare number (sidebar). */
+  words?: boolean;
   className?: string;
 }
 
 /** Small --text-1 count pill (open polls on Home rows and the sidebar). Reads at a glance; never colour-only. */
-export function CountBadge({ count, label, className }: CountBadgeProps) {
+export function CountBadge({ count, label, words, className }: CountBadgeProps) {
   return (
     <span
       className={cn(
-        "inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full border border-border-control px-1.5 text-caption font-medium text-text-1 tabular",
+        "inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full border border-border-control text-caption font-medium text-text-1 tabular",
+        words ? "px-2" : "px-1.5",
         className,
       )}
     >
-      <span aria-hidden>{formatCount(count)}</span>
-      <span className="sr-only">{label}</span>
+      {words ? (
+        label
+      ) : (
+        <>
+          <span aria-hidden>{formatCount(count)}</span>
+          <span className="sr-only">{label}</span>
+        </>
+      )}
     </span>
   );
 }

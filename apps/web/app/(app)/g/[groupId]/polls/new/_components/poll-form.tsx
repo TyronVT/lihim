@@ -8,12 +8,14 @@ import {
   AppBar,
   Button,
   Card,
-  ConfirmSheet,
+  FooterLinks,
+  HIDE_IN_SHELL_LG,
   Icon,
   PageHeader,
   PinnedFooter,
   Screen,
   SegmentedControl,
+  ShellHeader,
   SmallGroupWarning,
   Switch,
   TextArea,
@@ -21,11 +23,14 @@ import {
   notify,
 } from "@/components";
 import { copy } from "@/lib/copy";
-import { repo, SmallGroupError, type Group, type PollKind } from "@/lib/data";
+import { PollNotOpenedError, repo, SmallGroupError, type Group, type PollKind } from "@/lib/data";
 import { formatWhen } from "@/lib/format";
+import { MEDIA, useMediaQuery } from "@/lib/media";
 import { isSmallGroup, MAX_POLL_OPTIONS } from "@/lib/poll";
 import { cn } from "@/lib/cn";
 import { InviteSheet } from "../../../_components/invite-sheet";
+import { PollPreview } from "./poll-preview";
+import { ReviewSheet } from "./review-sheet";
 import {
   DEFAULT_PRESET,
   MAX_OPEN_MS,
@@ -91,7 +96,12 @@ export function PollForm({ group, backHref }: { group: Group; backHref: string }
   const [custom, setCustom] = useState("");
   const [hideLiveTally, setHideLiveTally] = useState(true);
   const [showErrors, setShowErrors] = useState(false);
-  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  // True from "Open poll" until we navigate away (or it fails and the admin can try again).
+  const [opening, setOpening] = useState(false);
+  // Behaviour only (layout stays in CSS: the preview rail shows from lg, beside the form at xl):
+  // at ≥ xl the preview replaces the review sheet (spec L5 "Expanded").
+  const wide = useMediaQuery(MEDIA.xl);
   // Set when the server says the group shrank below min_members since this screen loaded.
   const [serverBlock, setServerBlock] = useState<{ memberCount: number; minMembers: number } | null>(null);
 
@@ -156,6 +166,44 @@ export function PollForm({ group, backHref }: { group: Group; backHref: string }
   };
 
   // ---- submit -------------------------------------------------------------
+  const openPoll = async () => {
+    if (closesAt === null || opening) return;
+    setOpening(true);
+    try {
+      // With NEXT_PUBLIC_DATA=supabase this signs `create_poll` with the per-group admin key and
+      // sends it via `submit-admin-tx` (lib/data/supabase.ts). The contract freezes the root +
+      // size and rejects when size < min_members (→ SmallGroupError).
+      await repo.createPoll({
+        groupId: group.id,
+        title: title.trim(),
+        kind,
+        optionLabels: kind === "single" ? filled : undefined,
+        closesAt: new Date(closesAt).toISOString(),
+        hideLiveTally,
+      });
+      // P6: it comes back as a draft ("Opening…") and opens once it lands; L3 shows that row.
+      notify(t.openingToast);
+      router.replace(backHref);
+    } catch (err) {
+      if (err instanceof SmallGroupError) {
+        // Close the sheet and fall back to the blocked state; the card explains why.
+        setOpening(false);
+        setReviewOpen(false);
+        setServerBlock({ memberCount: err.memberCount, minMembers: err.minMembers });
+        return;
+      }
+      // createPoll may reject AFTER saving the poll as a "Didn't open" draft. Sending again from
+      // here would make a second poll, so hand over to L3's "Try again" row when that happened.
+      if (err instanceof PollNotOpenedError) {
+        notify.error(t.didntOpen);
+        router.replace(backHref);
+        return;
+      }
+      setOpening(false);
+      notify.error(t.failed); // the review sheet stays open for another try
+    }
+  };
+
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (blocked) return;
@@ -169,44 +217,51 @@ export function PollForm({ group, backHref }: { group: Group; backHref: string }
       else document.getElementById(CLOSES_ID)?.focus();
       return;
     }
-    setConfirmOpen(true);
-  };
-
-  const create = async () => {
-    if (closesAt === null) return;
-    try {
-      // With NEXT_PUBLIC_DATA=supabase this signs `create_poll` with the per-group admin key and
-      // sends it via `submit-admin-tx` (lib/data/supabase.ts). The contract freezes the root +
-      // size and rejects when size < min_members (→ SmallGroupError).
-      const poll = await repo.createPoll({
-        groupId: group.id,
-        title: title.trim(),
-        kind,
-        optionLabels: kind === "single" ? filled : undefined,
-        closesAt: new Date(closesAt).toISOString(),
-        hideLiveTally,
-      });
-      notify.success(t.opened);
-      router.push(`/p/${encodeURIComponent(poll.id)}`);
-    } catch (err) {
-      if (err instanceof SmallGroupError) {
-        // Close the sheet and fall back to the blocked state; the card explains why.
-        setServerBlock({ memberCount: err.memberCount, minMembers: err.minMembers });
-        return;
-      }
-      notify.error(t.failed);
-      throw err; // keeps the confirm sheet open for another try
-    }
+    // ≥ 1280: the preview beside the form already showed what members get.
+    if (wide) void openPoll();
+    else setReviewOpen(true);
   };
 
   const showSmallWarning = !blocked && isSmallGroup(memberCount);
 
+  const primary = (
+    <Button type="submit" form={FORM_ID} disabled={blocked} loading={opening} loadingLabel={t.opening}>
+      {t.openCta}
+    </Button>
+  );
+
+  const preview = !blocked ? (
+      <PollPreview
+        kind={kind}
+        title={title}
+        optionLabels={options.map((o) => o.label)}
+        closesAt={closingError ? null : closesAt}
+        now={now}
+        memberCount={memberCount}
+      />
+    ) : undefined;
+
   return (
     <>
       <AppBar title={t.title} backHref={backHref} />
-      <Screen withFooter>
+      <Screen
+        withFooter
+        width="form"
+        header={
+          <ShellHeader
+            back={{ href: backHref, label: group.name }}
+            title={t.title}
+            context={t.heading(group.name)}
+            actions={primary}
+          />
+        }
+        rail={preview}
+        railFrom="lg"
+        railLabel={t.previewTitle}
+      >
         <div className="flex flex-col gap-4">
-          <PageHeader illustration="poll" illustrationSize={64} title={t.heading(group.name)} />
+          {/* No hero above the fold on desktop (spec §3); the page header names the group. */}
+          <PageHeader illustration="poll" illustrationSize={64} title={t.heading(group.name)} className={HIDE_IN_SHELL_LG} />
           {blocked ? (
             <SmallGroupWarning
               variant="blocking"
@@ -364,23 +419,27 @@ export function PollForm({ group, backHref }: { group: Group; backHref: string }
             />
           </fieldset>
         </form>
+        <FooterLinks />
       </Screen>
 
       <PinnedFooter>
         {!blocked && <p className="text-caption text-text-3 tabular">{t.frozenNote(memberCount)}</p>}
-        <Button type="submit" form={FORM_ID} disabled={blocked}>
-          {t.openCta}
-        </Button>
+        {primary}
       </PinnedFooter>
 
-      <ConfirmSheet
-        open={confirmOpen}
-        onOpenChange={setConfirmOpen}
-        title={t.confirmTitle}
-        body={closesAt !== null ? t.confirmBody(memberCount, formatWhen(closesAt, now)) : undefined}
-        confirmLabel={t.confirmCta}
-        busyLabel={t.opening}
-        onConfirm={create}
+      <ReviewSheet
+        open={reviewOpen}
+        onOpenChange={setReviewOpen}
+        busy={opening}
+        onConfirm={() => void openPoll()}
+        review={{
+          kind,
+          title: title.trim(),
+          optionLabels: filled,
+          closesAt: closesAt !== null ? formatWhen(closesAt, now) : "",
+          memberCount,
+          hideLiveTally,
+        }}
       />
     </>
   );

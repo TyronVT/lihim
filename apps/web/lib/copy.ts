@@ -85,7 +85,6 @@ export const copy = {
 
   vote: {
     proving: "Proving you're a member…",
-    provingTl: "Pinapatunayang member ka…",
     provingReduced: "Proving…",
     slow: "Medyo matagal sa phone na 'to — okay lang, tuloy pa rin.",
     recorded: "Recorded anonymously",
@@ -95,16 +94,16 @@ export const copy = {
     invalid: "Hindi ma-record ang sagot na 'to. Refresh the page and try again.",
     notMember: "You weren't a member when this poll opened, so you can't answer it.",
     pollClosed: "This poll is closed.",
-    /** @deprecated One-tap answering (before P4). Use `pickThenSend`. */
-    tapToAnswer: "Tap an answer. You can't change it after.",
     /** P4: L6 instruction line. */
     pickThenSend: "Pick an answer, then send. You can't change it after.",
     /** P4: the pinned primary (compact) / button under the options (expanded). */
     send: "Send answer",
     /** X2 joined-after-open: the text link (no primary). */
     backToGroup: "Back to group",
-    /** Expanded only, under the options (draft copy). */
-    keyboardHint: "Press 1–8 to pick an answer, then Enter to send.",
+    /** Expanded only, under the options (draft copy). Pass the number of choices (2–8, or 5 for a rating). */
+    keyboardHint: (max: number) => `Press 1–${max} to pick an answer, then Enter to send.`,
+    /** The send button while proving/relaying; the live region carries `proving` (draft copy). */
+    sending: "Sending…",
     ratingMin: "Hindi maganda",
     ratingMax: "Napakaganda",
     ratingAria: (n: number) => `${n} out of 5`,
@@ -148,6 +147,8 @@ export const copy = {
   },
 
   poll: {
+    /** Page title (≥ lg header) for L6/L7's not-found and load-error states. (draft copy) */
+    title: "Poll",
     closesAt: (when: string) => `Closes ${when}`,
     closedAt: (when: string) => `Closed ${when}`,
     opensAt: (when: string) => `Opens ${when}`,
@@ -201,8 +202,18 @@ export const copy = {
     maxUses: "People who can join with it",
     maxUsesNone: "No limit",
     maxUsesHint: "The link stops working after this many joins, so it's harder to pad the group.",
-    creating: "Ginagawa ang group…",
+    /** S5: the button label while the passkey prompt signs the group. */
+    creating: "Creating…",
     failed: "Hindi magawa ang group. Try again.",
+    /** ≥ 1280 rail: static "How groups work" card. Below that, the field hints carry it. (draft copy) */
+    howTitle: "How groups work",
+    howWhoTitle: "Who sees what",
+    howWhoBody: "You see who joined. Members see only how many joined. Nobody, not even you, sees what anyone answers.",
+    howMinTitle: "Why a minimum size",
+    howMinBody: "Polls can't open below it. In a very small group, people can guess who answered what just by elimination.",
+    howInviteTitle: "What an invite link does",
+    howInviteBody:
+      "Anyone with the link can join until it expires or fills up. Each person joins with their own passkey. You can turn the link off from the group page.",
     // success state
     readyTitle: (name: string) => `Ready na ang ${name}`,
     readyBody: "Send this link to your members. Each person joins with their own passkey.",
@@ -222,10 +233,6 @@ export const copy = {
     adminCaption: "Only you see names. Members see the count only.",
     memberCaption: (createdBy: string) => `Created by ${createdBy}`,
     adminActions: "Admin actions",
-    /** @deprecated P6 — use copy.pollOpening.sectionTitle / .openingMeta. */
-    drafts: "Opening",
-    /** @deprecated P6 — use copy.pollOpening.openingMeta. */
-    draftMeta: "Usually under a minute.",
     noPastTitle: "Wala pang tapos na poll",
     noPastBody: "Results show up here once a poll closes.",
     newPollCta: "Ask the group",
@@ -235,6 +242,12 @@ export const copy = {
     notFoundTitle: "Hindi mahanap ang group na 'to",
     notFoundBody: "It may have been removed, or you're not a member yet. Ask the admin for an invite link.",
     home: "Your groups",
+    /** R10 poll card meta: "16 of 31 answered". Turnout only, never who. */
+    cardTurnout: (answered: number, total: number) => `${fmt(answered)} of ${fmt(total)} answered`,
+    /** Accessible name of the L3 overflow (members: Leave group). */
+    groupOptions: "Group options",
+    /** Accessible name of the L3 rail / compact overview block. */
+    overviewLabel: "About this group",
   },
 
   /** Invite sheet (L3, L4). */
@@ -299,6 +312,9 @@ export const copy = {
     listLabel: "Member list",
     removeFailed: "Hindi ma-remove. Try again.",
     inviteCta: "Invite members",
+    /** Keyboard hint drawn inside the search field at ≥ lg (spec §3: "/" focuses the member search). */
+    searchKey: "/",
+    removedListLabel: "Removed members",
   },
 
   /** L5. */
@@ -334,11 +350,6 @@ export const copy = {
       `Only the ${fmt(n)} current ${plural(n, "member", "members")} can answer. People who join after it opens can't.`,
     openCta: "Open poll",
     opening: "Binubuksan…",
-    confirmTitle: "Open this poll?",
-    confirmBody: (n: number, when: string) =>
-      `You can't edit it once it's open. ${fmt(n)} ${plural(n, "member", "members")} can answer until ${when}.`,
-    confirmCta: "Open poll",
-    opened: "Bukas na ang poll",
     failed: "Hindi mabuksan ang poll. Try again.",
     blockedInvite: "Invite link",
     /** R7 review sheet (compact/medium). */
@@ -352,6 +363,14 @@ export const copy = {
     previewTitle: "What members will see",
     /** After "Open poll" (P6): goes to L3 with an Opening… row. */
     openingToast: "Poll is opening. Members get an alert once it's live.",
+    /** Review sheet row labels. (draft copy) */
+    reviewCloses: "Closes",
+    reviewWhoLabel: "Who can answer",
+    reviewResults: "Results",
+    /** Preview: shown in place of an option that's still empty. */
+    previewOption: (n: number) => `Option ${n}`,
+    /** createPoll rejected but left a "Didn't open" draft (P6): retry lives on L3, not here. (draft copy) */
+    didntOpen: "Hindi nabuksan ang poll. Try again from the group page.",
   },
 
   /** P6 — L3 rows for polls whose create transaction is pending or failed (admin only). */
@@ -424,6 +443,8 @@ export const copy = {
     createAccount: "New here? Create an account",
     /** Back from the new-account step to sign-in (draft copy). */
     haveAccount: "Already have a passkey? Sign in",
+    /** h1 of the new-account step. */
+    createTitle: "Create your account", // (draft copy)
     nameLabel: "Your name",
     nameHint: "Only admins of groups you join see this. It's never attached to your answers.",
     nameRequired: "Enter your name.", // (draft copy)
@@ -608,8 +629,6 @@ export const copy = {
         body: "The admin controls the invite link. If the member count looks too high for your group, ask about it.",
       },
     ],
-
-    displayTitle: "Display",
   },
 
   errors: {

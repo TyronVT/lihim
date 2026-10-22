@@ -44,6 +44,12 @@ export interface ScreenProps extends Omit<HTMLAttributes<HTMLElement>, "title"> 
   rail?: ReactNode;
   /** Where the rail stacks below xl: "after" the content (default) or "before" it (L3's strip). */
   railPlacement?: "before" | "after";
+  /**
+   * Hide the rail below a breakpoint instead of stacking it there: "xl" = only beside the column
+   * (L1's "How groups work"), "lg" = from 1024 up, stacked below xl (L5's live preview). Default:
+   * shown at every width.
+   */
+  railFrom?: "lg" | "xl";
   /** Accessible name of the rail's <aside>. Default "Details". */
   railLabel?: string;
   children: ReactNode;
@@ -67,6 +73,7 @@ export function Screen({
   header,
   rail,
   railPlacement = "after",
+  railFrom,
   railLabel = copy.shell.railLabel,
   className,
   children,
@@ -76,7 +83,13 @@ export function Screen({
   const [base, withRail] = WIDTH[key];
   const widthCls = cn(base, rail && withRail);
   const aside = rail && (
-    <aside aria-label={railLabel} className="flex min-w-0 flex-col gap-section xl:sticky xl:top-8 xl:col-start-2 xl:row-start-1">
+    <aside
+      aria-label={railLabel}
+      className={cn(
+        "min-w-0 flex-col gap-section xl:sticky xl:top-8 xl:col-start-2 xl:row-start-1",
+        railFrom === "xl" ? "hidden xl:flex" : railFrom === "lg" ? "hidden lg:flex" : "flex",
+      )}
+    >
       {rail}
     </aside>
   );

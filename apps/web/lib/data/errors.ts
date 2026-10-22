@@ -66,3 +66,18 @@ export class PollClosingPassedError extends Error {
     this.name = "PollClosingPassedError";
   }
 }
+
+/**
+ * createPoll: the poll's row was written but its create transaction didn't go out, so it is now a
+ * "Didn't open" draft (P6). L5 sends the admin to L3, where that row offers Try again / Discard;
+ * retrying from L5 would make a second poll.
+ */
+export class PollNotOpenedError extends Error {
+  constructor(
+    public readonly pollId: string,
+    options?: { cause?: unknown },
+  ) {
+    super("The poll was saved but didn't open", options);
+    this.name = "PollNotOpenedError";
+  }
+}

@@ -15,7 +15,7 @@
  */
 import { env } from "./env";
 import type { SerializedProof } from "./proof";
-import { mockRecordVote } from "./data/mock";
+import { mockFailure, mockRecordVote } from "./data/mock";
 import { toHex32 } from "./format";
 
 export type RelayOutcome =
@@ -86,6 +86,8 @@ async function mockSubmit(chainPollId: string, proof: SerializedProof): Promise<
     console.info("[lihim/relay mock] POST /vote", { poll_id: chainPollId, proof });
   }
   await new Promise((r) => setTimeout(r, 400));
+  // ?mockFail=vote-network: the relay can't be reached; nothing recorded (L6 retry state).
+  if (mockFailure() === "vote-network") return { status: "not_sent", cause: "network" };
   // Same cheap check as apps/relay (wire.ts): scope must equal poll_id.
   if (proof.scope !== chainPollId) return { status: "invalid", reason: "scope_mismatch" };
   const ok = mockRecordVote(chainPollId, toHex32(proof.nullifier), Number(proof.message));

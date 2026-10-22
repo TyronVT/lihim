@@ -118,7 +118,7 @@ function Label({ children }: { children: ReactNode }) {
   return <p className="text-overline uppercase text-text-3">{children}</p>;
 }
 
-/** Full L6 flow against the mock prover + mock relay. */
+/** Full L6 flow against the mock prover + mock relay: pick, then "Send answer" (P4). */
 function VoteDemo({ kind }: { kind: "single" | "rating" }) {
   const [value, setValue] = useState<number | null>(null);
   const [phase, setPhase] = useState<VoteStatusPhase>("idle");
@@ -129,10 +129,16 @@ function VoteDemo({ kind }: { kind: "single" | "rating" }) {
 
   const answerPhase: AnswerPhase = phase === "idle" ? "idle" : phase === "recorded" ? "done" : "proving";
 
-  const answer = async (v: number) => {
-    if (busy.current) return;
-    busy.current = true;
+  const pick = (v: number) => {
+    if (busy.current || phase === "recorded") return;
     setValue(v);
+    setError(null);
+  };
+
+  const send = async () => {
+    if (busy.current || value === null) return;
+    const v = value;
+    busy.current = true;
     setError(null);
     setSlow(false);
     const res = await castVote(DEMO_POLL, v, {
@@ -172,9 +178,14 @@ function VoteDemo({ kind }: { kind: "single" | "rating" }) {
       />
       <AnonymityBanner>{copy.anonymity.bannerVote}</AnonymityBanner>
       {kind === "single" ? (
-        <OptionGroup label="Saan tayo mag-retreat this sem?" options={SAMPLE_OPTIONS} value={value} onSelect={answer} phase={answerPhase} />
+        <OptionGroup label="Saan tayo mag-retreat this sem?" options={SAMPLE_OPTIONS} value={value} onSelect={pick} phase={answerPhase} />
       ) : (
-        <RatingRow label="Rate the GA last Friday" value={value} onSelect={answer} phase={answerPhase} />
+        <RatingRow label="Rate the GA last Friday" value={value} onSelect={pick} phase={answerPhase} />
+      )}
+      {phase !== "recorded" && (
+        <Button onClick={send} disabled={value === null} loading={answerPhase === "proving"} loadingLabel={copy.vote.sending}>
+          {copy.vote.send}
+        </Button>
       )}
       <VoteStatus phase={phase} slow={slow} />
       {error && <Notice tone="danger" title={error} />}

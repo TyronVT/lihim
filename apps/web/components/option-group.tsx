@@ -8,7 +8,7 @@ import type { PollOption } from "@/lib/data/types";
 import { Icon } from "./icons";
 
 /**
- * idle    → interactive.
+ * idle    → interactive: tap/Space/arrow keys move the selection (nothing is sent yet, P4).
  * proving → selected row locked with the progress line, others faded to 40 %.
  * done    → selected row locked with a check, others faded. (Also use for "already answered"
  *           with value=null so nothing hints at the earlier choice.)
@@ -16,31 +16,39 @@ import { Icon } from "./icons";
 export type AnswerPhase = "idle" | "proving" | "done";
 
 /**
- * Keyboard model: a real radiogroup, but arrow keys only MOVE FOCUS; Space/Enter (or tap)
- * commits. Native radios select on arrow, which here would cast an irreversible vote
- * while someone is just browsing the options.
+ * Keyboard model (P4: selecting is not answering, the screen's "Send answer" commits): a real
+ * radiogroup with roving focus. Arrow keys / Home / End move focus AND the selection, as native
+ * radios do. Space selects. Enter selects an unselected row; on the already-selected row it's
+ * left alone so it bubbles to the screen, where Enter means "Send answer" (L6).
  */
-function useCommitRadioKeys() {
+function useRadioKeys(onSelect: (el: HTMLElement) => void) {
   const ref = useRef<HTMLDivElement>(null);
-  const onKeyDown = useCallback((e: KeyboardEvent<HTMLDivElement>) => {
-    const keys = ["ArrowDown", "ArrowRight", "ArrowUp", "ArrowLeft", "Home", "End"];
-    if (!keys.includes(e.key) || !ref.current) return;
-    const items = Array.from(ref.current.querySelectorAll<HTMLElement>('[role="radio"]:not([aria-disabled="true"])'));
-    if (items.length === 0) return;
-    e.preventDefault();
-    const i = items.indexOf(document.activeElement as HTMLElement);
-    let next = i;
-    if (e.key === "Home") next = 0;
-    else if (e.key === "End") next = items.length - 1;
-    else if (e.key === "ArrowDown" || e.key === "ArrowRight") next = (i + 1) % items.length;
-    else next = (i - 1 + items.length) % items.length;
-    items[next]?.focus();
-  }, []);
+  const onKeyDown = useCallback(
+    (e: KeyboardEvent<HTMLDivElement>) => {
+      const keys = ["ArrowDown", "ArrowRight", "ArrowUp", "ArrowLeft", "Home", "End"];
+      if (!keys.includes(e.key) || !ref.current) return;
+      const items = Array.from(ref.current.querySelectorAll<HTMLElement>('[role="radio"]:not([aria-disabled="true"])'));
+      if (items.length === 0) return;
+      e.preventDefault();
+      const i = items.indexOf(document.activeElement as HTMLElement);
+      let next = i;
+      if (e.key === "Home") next = 0;
+      else if (e.key === "End") next = items.length - 1;
+      else if (e.key === "ArrowDown" || e.key === "ArrowRight") next = (i + 1) % items.length;
+      else next = (i - 1 + items.length) % items.length;
+      const el = items[next];
+      if (!el) return;
+      el.focus();
+      onSelect(el);
+    },
+    [onSelect],
+  );
   return { ref, onKeyDown };
 }
 
-function activate(e: KeyboardEvent<HTMLElement>, fn: () => void) {
-  if (e.key === " " || e.key === "Enter") {
+/** Space selects; Enter selects only when not yet selected (see useRadioKeys). */
+function activate(e: KeyboardEvent<HTMLElement>, selected: boolean, fn: () => void) {
+  if (e.key === " " || (e.key === "Enter" && !selected)) {
     e.preventDefault();
     fn();
   }
@@ -74,6 +82,8 @@ export interface OptionRowProps {
   done?: boolean;
   tabbable?: boolean;
   onSelect?: () => void;
+  /** Option value, read by the group's arrow-key handler. */
+  value?: number;
 }
 
 /**
@@ -91,6 +101,7 @@ export function OptionRow({
   done,
   tabbable,
   onSelect,
+  value,
 }: OptionRowProps) {
   const interactive = !locked && !!onSelect;
   return (
@@ -100,7 +111,8 @@ export function OptionRow({
       aria-disabled={!interactive || undefined}
       tabIndex={tabbable ? 0 : -1}
       onClick={interactive ? onSelect : undefined}
-      onKeyDown={interactive ? (e) => activate(e, onSelect) : undefined}
+      data-value={value}
+      onKeyDown={interactive ? (e) => activate(e, selected, onSelect) : undefined}
       className={cn(
         "relative flex min-h-14 w-full items-center gap-3 overflow-hidden rounded-md border px-4 py-3 text-left",
         "transition-[background-color,border-color,box-shadow,opacity] duration-base ease-standard",
@@ -140,9 +152,9 @@ export function OptionRow({
 
 export interface OptionGroupProps {
   options: PollOption[];
-  /** The committed choice (PollOption.value) or null. */
+  /** The selected choice (PollOption.value) or null. Selected is not sent: see "Send answer" on L6. */
   value: number | null;
-  /** Fires once on tap/Space/Enter. The screen should set phase="proving" in response. */
+  /** Fires on tap, Space, Enter (unselected row) and arrow keys. Moves the selection only (P4). */
   onSelect: (value: number) => void;
   phase?: AnswerPhase;
   /** Accessible name (usually the question). Use `labelledBy` to point at the visible question instead. */
@@ -153,7 +165,10 @@ export interface OptionGroupProps {
   className?: string;
 }
 
-/** Single-choice / Yes–No answers. Tap = answer; there's no separate submit. */
+/**
+ * Single-choice / Yes–No answers. Tap selects; the screen's "Send answer" commits (P4). Also used
+ * read-only (`disabled`) as L5's live preview.
+ */
 export function OptionGroup({
   options,
   value,
@@ -164,8 +179,10 @@ export function OptionGroup({
   disabled,
   className,
 }: OptionGroupProps) {
-  const { ref, onKeyDown } = useCommitRadioKeys();
   const locked = disabled || phase !== "idle";
+  const { ref, onKeyDown } = useRadioKeys(
+    useCallback((el: HTMLElement) => onSelect(Number(el.dataset.value)), [onSelect]),
+  );
   const tabbableValue = value ?? options[0]?.value;
   return (
     <div
@@ -189,6 +206,7 @@ export function OptionGroup({
             proving={selected && phase === "proving"}
             done={selected && phase === "done"}
             tabbable={o.value === tabbableValue}
+            value={o.value}
             onSelect={() => onSelect(o.value)}
           />
         );
@@ -198,7 +216,7 @@ export function OptionGroup({
 }
 
 export interface RatingRowProps {
-  /** Committed rating 1..5 or null. */
+  /** Selected rating 1..5 or null (not sent until "Send answer", P4). */
   value: number | null;
   onSelect: (value: number) => void;
   phase?: AnswerPhase;
@@ -226,8 +244,10 @@ export function RatingRow({
   maxLabel = copy.vote.ratingMax,
   className,
 }: RatingRowProps) {
-  const { ref, onKeyDown } = useCommitRadioKeys();
   const locked = disabled || phase !== "idle";
+  const { ref, onKeyDown } = useRadioKeys(
+    useCallback((el: HTMLElement) => onSelect(Number(el.dataset.value)), [onSelect]),
+  );
   const tabbable = value ?? 1;
   const captionId = useId();
   return (
@@ -253,8 +273,9 @@ export function RatingRow({
               aria-label={copy.vote.ratingAria(n)}
               aria-disabled={!interactive || undefined}
               tabIndex={n === tabbable ? 0 : -1}
+              data-value={n}
               onClick={interactive ? () => onSelect(n) : undefined}
-              onKeyDown={interactive ? (e) => activate(e, () => onSelect(n)) : undefined}
+              onKeyDown={interactive ? (e) => activate(e, selected, () => onSelect(n)) : undefined}
               className={cn(
                 "relative flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-md border text-label tabular",
                 "transition-[background-color,border-color,box-shadow,opacity] duration-base ease-standard",

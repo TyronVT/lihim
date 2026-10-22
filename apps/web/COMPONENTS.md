@@ -42,17 +42,17 @@ Theme: dark default; light via `prefers-color-scheme` or the user override (`<Th
 |---|---|---|---|
 | `AppBar` | `components/app-bar.tsx` | `title?, backHref?, backLabel?, right?, wide?, keepOnDesktop?` | Sticky 56 px; title is the page `<h1>`; back = Lucide 24 px. **Hidden at ≥ lg inside a shell** |
 | `AppBarAction` | `components/app-bar.tsx` | `label, icon, onClick? \| href?` | 48 px icon button for `right` |
-| `Screen` | `components/screen.tsx` | `wide?, width?: "page" \| "form" \| "reading", withFooter?, header?, rail?, railPlacement?, railLabel?, …main attrs` | `<main id="main">` 480 → 560 (md) → 720/560/640 (lg); `wide` 720 → 960 (lg). See desktop section |
+| `Screen` | `components/screen.tsx` | `wide?, width?: "page" \| "form" \| "reading", withFooter?, header?, rail?, railPlacement?, railFrom?, railLabel?, …main attrs` | `<main id="main">` 480 → 560 (md) → 720/560/640 (lg); `wide` 720 → 960 (lg). See desktop section |
 | `Section` | `components/screen.tsx` | `title?, action?, children` | Heading + 12 px stacked children |
 | `Card` | `components/screen.tsx` | `tone?: "surface" \| "raised"` | r16, p16, border, `shadow-raised` |
 | `PageHeader` | `components/page-header.tsx` | `title, description?, illustration?, illustrationSize?=64, illustrationAlt?, level?=2, display?` | In-content heading (+ hero) |
 | `PinnedFooter` | `components/pinned-footer.tsx` | `children, wide?` | Fixed bottom, 16 px + safe-area; pair with `<Screen withFooter>`. **Hidden at ≥ lg inside a shell** |
 | `Button` | `components/button.tsx` | `variant?: primary \| secondary \| destructive \| ghost, block?=true, asChild?, loading?, loadingLabel?` | h48 r12; `asChild` wraps `<Link>`; destructive always behind `ConfirmSheet` |
-| `OptionGroup` | `components/option-group.tsx` | `options: PollOption[], value: number \| null, onSelect(v), phase?: "idle" \| "proving" \| "done", label? \| labelledBy?, disabled?` | Real radiogroup; tap/Space/Enter commits, arrows only move focus; proving = lock + fade others 40 % + silver line |
+| `OptionGroup` | `components/option-group.tsx` | `options: PollOption[], value: number \| null, onSelect(v), phase?: "idle" \| "proving" \| "done", label? \| labelledBy?, disabled?` | Real radiogroup (P4): tap/Space/arrows/Home/End select; Enter on the selected row bubbles to the screen's "Send answer"; proving = lock + fade others 40 % + silver line |
 | `OptionRow` | `components/option-group.tsx` | `label, description?, selected, locked?, faded?, proving?, done?, tabbable?, onSelect?` | Presentational row (inside a `role="radiogroup"`) |
 | `RatingRow` | `components/option-group.tsx` | `value: number \| null, onSelect(n), phase?, label? \| labelledBy?, disabled?, minLabel?, maxLabel?` | Five 56 px squares, "3 out of 5", captions "Hindi maganda"/"Napakaganda"; static "Proving…" under reduced motion |
 | `ProgressLine` | `components/option-group.tsx` | `className?` | The proving line (used inside rows) |
-| `VoteStatus` | `components/vote-status.tsx` | `phase: "idle" \| "proving" \| "sending" \| "recorded", slow?` | aria-live words for L6: "Pinapatunayang member ka…" over "Proving you're a member…"; recorded = Poll illustration rise-in + check |
+| `VoteStatus` | `components/vote-status.tsx` | `phase: "idle" \| "proving" \| "sending" \| "recorded", slow?` | aria-live (polite) words for L6: one proving string, "Proving you're a member…" (R13), plus the slow line; recorded = Poll illustration rise-in + check |
 | `ResultBar` | `components/results.tsx` | `label, count, total, leading?` | Count + % as text, bar aria-hidden |
 | `TurnoutMeter` | `components/results.tsx` | `answered, total` | "23 of 31 members answered" + thin bar |
 | `VerifiedBadge` | `components/badges.tsx` | `pollId, status?, whileOpen?` | Links to `/verify/[pollId]`; 48 px link box (R9); with `status` renders only when closed (R15) |
@@ -259,9 +259,18 @@ return (
 - **`StatusPill`** — `"draft"` now reads "Opening…"; new `"didnt-open"` ("Didn't open", danger + icon). Use
   `pollPillStatus(poll)`.
 - **`Toaster`** — bottom right (400) at ≥ lg, bottom centre (400) at md, full width − 32 on compact.
-- **Not changed (L6 builder owns them):** `OptionGroup`, `OptionRow`, `RatingRow`, `VoteStatus`. P4
-  (select, then "Send answer"), number keys and R13 (one proving string) are L6 work; keep
-  `options/value/onSelect/phase/disabled/label` working because L5's preview uses `OptionGroup` read-only.
+- **`OptionGroup` / `OptionRow` / `RatingRow`** — tap/Space/arrows select (P4); Enter on the selected row
+  bubbles to the screen's send. `OptionRow` has an optional `value`. L5's preview still uses `OptionGroup`
+  read-only (`disabled`).
+- **`VoteStatus`** — one proving string plus the slow line (R13), in a polite live region.
+- **`ShellHeader`** — also `illustration?` (64 px, before the title: L8's Mark) and `titleClassName?` (L6 uses
+  `text-display`). `context` renders in a `<div>`, so it can hold pills and blocks.
+- **`Screen`** — `railFrom?: "lg" | "xl"` hides the rail below that breakpoint instead of stacking it (L1's
+  "How groups work" at xl only; L5's live preview from lg).
+- **`StatusRow`** — `failedTitle?: "danger" | "neutral"`: keep the title `--text-1` when it is a name and a
+  pill in `body` says "Didn't open" (L3).
+- **`TextField`** — `end?` decoration inside the input's right edge (L4's "/" key hint), aria-hidden.
+- **`CountBadge`** — `words?` shows the label itself ("2 open polls", Home rows) instead of the number.
 
 ### Session (P1, P5) — `lib/session.ts`
 
@@ -282,8 +291,10 @@ Error → copy: cancelled → `copy.signin.cancelled`, not found → `copy.signi
 **Mock:** Ana is signed in by default. `signOut` persists `localStorage["lihim:mock:signed-out:v1"] = "1"`
 (try/catch), so `/signin` and the gate can be exercised; `signIn`/`signUp` clear it after a ~0.9 s fake
 prompt. `signUp(name)` keeps Ana's demo groups and renames her. Failure states on demand: add
-`?mockFail=cancelled|no-passkey|unsupported` (sign in / sign up) or `?mockFail=poll` (createPoll / retryPoll
-leave a "Didn't open" draft and reject) to the page URL.
+`?mockFail=cancelled|no-passkey|unsupported` (sign in / sign up), `?mockFail=poll` (createPoll / retryPoll
+leave a "Didn't open" draft and reject with `PollNotOpenedError`), `?mockFail=vote-network` / `vote-late` (L6:
+relay unreachable / joined after it opened) or `?mockFail=mismatch` (L9 recount disagrees) to the page URL.
+`getInvitePreview` reports `alreadyMember: false` while signed out.
 
 **Supabase:** `lib/passkey.ts` runs the `auth-passkey` Edge Function ceremony with the PRF extension in the
 same prompt (sign-up may need a second prompt on authenticators that only report `prf.enabled` at
@@ -326,10 +337,9 @@ Type changes: `Poll.openState: "pending" | "failed" | null` (drafts only, admins
 rail label) · `pollOpening` (P6 rows, retry/discard) · `leaveGroup` (P3) · `addingMembers` (R6) · additions to
 `invite` (`joined(uses, max)`, `turnOff*`, `turnedOff`, `makeNew`, `madeElsewhere`, `none`), `roster`
 (`removedSection(n)`, `activeCount(n)`, `colName/colJoined/colRole/colActions`, `roleMember`), `newPoll`
-(`review*`, `previewTitle`, `openingToast`), `vote` (`send`, `pickThenSend`, `backToGroup`, `keyboardHint`;
-`tapToAnswer` is deprecated), `results` (`verifyAfterClose`, `verifyRailBody`, `updated(ago)`), `group`
+(`review*`, `previewTitle`, `openingToast`), `vote` (`send`, `sending`, `pickThenSend`, `backToGroup`,
+`keyboardHint(max)`), `results` (`verifyAfterClose`, `verifyRailBody`, `updated(ago)`), `group`
 (`adminContext`, `manageMembers`, `about`, `minSize(n)`), `join.whatIsLihim`, `verify` (`intro`,
 `recounting`, `mismatchTitle/Shown/Recount`, `stillOpen(when)`, `notFound`, `unreachable`, `retry`),
-`status.didntOpen`. Changed values: `status.draft` → "Opening…", `hub.drafts`/`hub.draftMeta` (deprecated, now
-"Opening" / "Usually under a minute."), `home.emptyBody` (spec text). Strings the spec didn't fix are marked
+`status.didntOpen`. Changed values: `status.draft` → "Opening…", `home.emptyBody` (spec text). Strings the spec didn't fix are marked
 `// (draft copy)`.

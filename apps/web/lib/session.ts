@@ -13,11 +13,28 @@
  *   await signOut();                         // L10
  *   await updateDisplayName(name);           // L10 "Your name"
  *
+ * Name fields (L0, L2, L10) share DISPLAY_NAME_MAX and displayNameError(); the wrappers trim and
+ * cap the name again before it reaches the repo.
+ *
  * Errors pass through unchanged (PasskeyCancelledError etc., lib/data/errors.ts).
  * The first useSession() call loads the user once per tab; refreshSession() re-reads it.
  */
 import { useEffect, useSyncExternalStore } from "react";
+import { copy } from "./copy";
 import { repo, type CurrentUser } from "./data";
+
+/** Longest display name (same cap as a group name, L1). */
+export const DISPLAY_NAME_MAX = 60;
+
+/** Trimmed and capped: what the repo stores. */
+export function cleanDisplayName(raw: string): string {
+  return raw.trim().slice(0, DISPLAY_NAME_MAX);
+}
+
+/** Inline error for a name field, or null when the name is fine. */
+export function displayNameError(raw: string): string | null {
+  return cleanDisplayName(raw) ? null : copy.signin.nameRequired;
+}
 
 export type SessionState =
   | { status: "loading"; user: null }
@@ -69,7 +86,7 @@ export async function signIn(): Promise<CurrentUser> {
 }
 
 export async function signUp(displayName: string): Promise<CurrentUser> {
-  const user = await repo.signUp(displayName);
+  const user = await repo.signUp(cleanDisplayName(displayName));
   set(fromUser(user));
   return user;
 }
@@ -80,7 +97,7 @@ export async function signOut(): Promise<void> {
 }
 
 export async function updateDisplayName(displayName: string): Promise<CurrentUser> {
-  const user = await repo.updateDisplayName(displayName);
+  const user = await repo.updateDisplayName(cleanDisplayName(displayName));
   set(fromUser(user));
   return user;
 }

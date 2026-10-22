@@ -3,7 +3,7 @@ import { SettingsScreen } from "./_components/settings-screen";
 
 export const metadata: Metadata = { title: "Settings" };
 
-/** L10 — Settings (P1, P2, P5). PLACEHOLDER: the account builder replaces SettingsScreen with the full spec. */
+/** L10 — Settings (P1 sign-out, P2 alerts, P5 name, R12 theme). */
 export default function SettingsPage() {
   return <SettingsScreen />;
 }

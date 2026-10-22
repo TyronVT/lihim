@@ -1,33 +1,42 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect } from "react";
 import {
   AppBar,
   Card,
+  FooterLinks,
   Icon,
   ResultBar,
   Screen,
   Section,
+  ShellHeader,
   SmallGroupWarning,
   StatusPill,
   TurnoutMeter,
   VerifiedBadge,
+  useCurrentGroup,
 } from "@/components";
 import { copy } from "@/lib/copy";
-import { repo, type Poll, type PollResult } from "@/lib/data";
+import { repo, type Group, type Poll, type PollResult } from "@/lib/data";
 import { useQuery } from "@/lib/data/hooks";
-import { formatAverage, formatClosing, formatPercent, formatShortDate, formatTime } from "@/lib/format";
+import { formatAgo, formatAverage, formatClosing, formatPercent, formatShortDate, formatTime } from "@/lib/format";
 import { isSmallGroup, optionLabel, pollDisplayStatus } from "@/lib/poll";
 import { PollLoadError, PollLoading, PollNotFound } from "../../_components/states";
 
 /** TODO: replace polling with a Supabase Realtime subscription on poll_results. */
 const LIVE_REFRESH_MS = 30_000;
 
-async function loadResults(pollId: string): Promise<{ poll: Poll; result: PollResult } | null> {
+interface ResultsData {
+  poll: Poll;
+  group: Group | null;
+  result: PollResult;
+}
+
+async function loadResults(pollId: string): Promise<ResultsData | null> {
   const poll = await repo.getPoll(pollId);
   if (!poll || poll.status === "draft") return null;
-  return { poll, result: await repo.getResults(pollId) };
+  const [group, result] = await Promise.all([repo.getGroup(poll.groupId), repo.getResults(pollId)]);
+  return { poll, group, result };
 }
 
 /** "6:00 PM" today, else "Oct 24, 6:00 PM" — reads right after "closes at". */
@@ -41,6 +50,7 @@ export function ResultsScreen({ pollId }: { pollId: string }) {
   const query = useQuery(() => loadResults(pollId), [pollId]);
   const open = query.status === "success" && query.data?.poll.status === "open";
   const { reload } = query;
+  useCurrentGroup(query.status === "success" ? query.data?.poll.groupId : null);
 
   useEffect(() => {
     if (!open) return;
@@ -52,14 +62,44 @@ export function ResultsScreen({ pollId }: { pollId: string }) {
   if (query.status === "error") return <PollLoadError onRetry={query.reload} />;
   if (!query.data) return <PollNotFound />;
 
-  const { poll, result } = query.data;
+  const { poll, group, result } = query.data;
   const display = pollDisplayStatus(poll);
+  const closed = display === "closed";
   const small = isSmallGroup(result.frozenSize);
+  const backHref = `/g/${encodeURIComponent(poll.groupId)}`;
 
   return (
     <>
-      <AppBar title={copy.results.title} backHref={`/g/${encodeURIComponent(poll.groupId)}`} />
-      <Screen>
+      <AppBar title={copy.results.title} backHref={backHref} />
+      <Screen
+        header={
+          <ShellHeader back={{ href: backHref, label: group?.name ?? copy.vote.backToGroup }} title={copy.results.title} />
+        }
+        // ≥ xl: turnout + the verified badge beside the tally. Below xl it stacks after, as on compact.
+        rail={
+          <>
+            <Section title={copy.results.turnoutLabel}>
+              <TurnoutMeter answered={result.votersCount} total={result.frozenSize} />
+              {result.updatedAt && (
+                <p className="text-caption text-text-3">{copy.results.updated(formatAgo(result.updatedAt))}</p>
+              )}
+              {result.hidden && <p className="text-caption text-text-3">{copy.results.hiddenNote}</p>}
+            </Section>
+
+            {/* R15: the verify page covers closed polls only, so no badge while open. */}
+            <div className="flex flex-col gap-1">
+              <VerifiedBadge
+                pollId={poll.id}
+                status={closed ? "closed" : poll.status}
+                whileOpen={<p className="text-caption text-text-2">{copy.results.verifyAfterClose}</p>}
+              />
+              {closed && <p className="hidden text-caption text-text-2 xl:block">{copy.results.verifyRailBody}</p>}
+            </div>
+
+            <FooterLinks />
+          </>
+        }
+      >
         {/* Turnout and tallies change while open; announce the refreshed headline politely. */}
         <header className="flex flex-col gap-3" aria-live="polite">
           <div className="flex flex-wrap items-center gap-2">
@@ -69,6 +109,13 @@ export function ResultsScreen({ pollId }: { pollId: string }) {
           <p className="text-body text-text-2">{poll.title}</p>
           <Headline poll={poll} result={result} />
         </header>
+
+        {small && (
+          <div className="flex flex-col gap-1">
+            <SmallGroupWarning />
+            <p className="pl-7 text-caption text-text-2">{copy.results.smallGroupBody}</p>
+          </div>
+        )}
 
         {!result.hidden && result.rows && result.votersCount > 0 && (
           <Section title={copy.results.tally}>
@@ -83,30 +130,9 @@ export function ResultsScreen({ pollId }: { pollId: string }) {
                 />
               ))}
             </Card>
-            <p className="text-caption text-text-3">{display === "closed" ? copy.results.final : copy.results.live}</p>
+            <p className="text-caption text-text-3">{closed ? copy.results.final : copy.results.live}</p>
           </Section>
         )}
-
-        <Section title={copy.results.turnoutLabel}>
-          <TurnoutMeter answered={result.votersCount} total={result.frozenSize} />
-          {result.hidden && <p className="text-caption text-text-3">{copy.results.hiddenNote}</p>}
-        </Section>
-
-        <div className="flex flex-col gap-4">
-          <VerifiedBadge pollId={poll.id} />
-          {small && (
-            <div className="flex flex-col gap-1">
-              <SmallGroupWarning />
-              <p className="pl-7 text-caption text-text-2">{copy.results.smallGroupBody}</p>
-            </div>
-          )}
-          <Link
-            href="/privacy"
-            className="self-start py-3 text-label text-text-2 underline-offset-4 hover:text-text-1 hover:underline"
-          >
-            {copy.common.privacyLink}
-          </Link>
-        </div>
       </Screen>
     </>
   );

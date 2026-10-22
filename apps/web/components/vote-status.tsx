@@ -17,8 +17,8 @@ export interface VoteStatusProps {
 
 /**
  * The words half of L6's proving moment, in an aria-live="polite" region.
- * proving/sending → "Pinapatunayang member ka…" over "Proving you're a member…" (+ slow line) · recorded → Poll illustration
- * rises in (320 ms, 8 px) with a success check and "Recorded anonymously".
+ * proving/sending → "Proving you're a member…" (one string, R13; + slow line after 4 s) · recorded →
+ * Poll illustration rises in (320 ms, 8 px) with a success check and "Recorded anonymously".
  * Never a spinner without words.
  */
 export function VoteStatus({ phase, slow, className }: VoteStatusProps) {
@@ -26,11 +26,8 @@ export function VoteStatus({ phase, slow, className }: VoteStatusProps) {
     <div aria-live="polite" aria-atomic="true" className={cn("min-h-6", className)}>
       {(phase === "proving" || phase === "sending") && (
         <div className="flex flex-col gap-1 animate-fade-in">
-          {/* Design: "Pinapatunayang member ka…" / "Proving you're a member…" — Taglish first, English under it. */}
-          <p lang="fil" className="text-label text-text-1">
-            {copy.vote.provingTl}
-          </p>
-          <p className="text-caption text-text-2">{copy.vote.proving}</p>
+          {/* Same words through relaying (S4): users don't need the two-step split. */}
+          <p className="text-label text-text-1">{copy.vote.proving}</p>
           {slow && <p className="text-caption text-text-3">{copy.vote.slow}</p>}
         </div>
       )}

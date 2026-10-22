@@ -119,7 +119,8 @@ export interface LihimRepository {
    * Admin only. Rejects with SmallGroupError when memberCount < minMembers. Resolves as soon as
    * the create transaction is sent: the poll may come back `status: "draft"` with
    * `openState: "pending"` (L3 shows "Opening…") and turns "open" once it lands. If sending
-   * fails it rejects, and the poll is left as a draft with `openState: "failed"`.
+   * fails it rejects with PollNotOpenedError (carrying the poll id), and the poll is left as a
+   * draft with `openState: "failed"`.
    */
   createPoll(input: CreatePollInput): Promise<Poll>;
   /**
