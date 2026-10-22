@@ -36,7 +36,7 @@ export function DesktopHome() {
           tone="danger"
           title={copy.errors.generic}
           action={
-            <Button variant="secondary" onClick={groups.reload}>
+            <Button icon="retry" variant="secondary" onClick={groups.reload}>
               {copy.common.retry}
             </Button>
           }
@@ -47,7 +47,7 @@ export function DesktopHome() {
           title={copy.home.emptyTitle}
           body={copy.home.emptyBody}
           action={
-            <Button asChild>
+            <Button icon="createGroup" asChild>
               <Link href="/groups/new">{copy.group.create}</Link>
             </Button>
           }

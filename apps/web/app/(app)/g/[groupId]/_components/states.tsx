@@ -26,7 +26,7 @@ export function GroupNotFound() {
       title={copy.hub.notFoundTitle}
       body={copy.hub.notFoundBody}
       action={
-        <Button asChild variant="secondary">
+        <Button icon="groups" asChild variant="secondary">
           <Link href="/">{copy.hub.home}</Link>
         </Button>
       }
@@ -42,7 +42,7 @@ export function AdminOnly({ groupId }: { groupId: string }) {
       icon="anonymous"
       title={copy.errors.adminOnly}
       action={
-        <Button asChild variant="secondary">
+        <Button icon="arrowLeft" asChild variant="secondary">
           <Link href={`/g/${encodeURIComponent(groupId)}`}>{copy.common.back}</Link>
         </Button>
       }
@@ -59,7 +59,7 @@ export function GroupError({ error, groupId, onRetry }: { error: unknown; groupI
       tone="danger"
       title={copy.errors.generic}
       action={
-        <Button variant="secondary" onClick={onRetry}>
+        <Button icon="retry" variant="secondary" onClick={onRetry}>
           {copy.common.retry}
         </Button>
       }

@@ -1,4 +1,3 @@
-import { CircleAlert, CircleCheck } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { Icon } from "./icons";
@@ -11,7 +10,7 @@ export interface StatusRowProps {
   title: ReactNode;
   /** Second line: "Usually under a minute." / "They can't answer new polls yet." */
   body?: ReactNode;
-  /** Failed: the recovery action, e.g. `<Button variant="secondary" block={false}>Try again</Button>`. */
+  /** Failed: the recovery action, e.g. `<Button variant="secondary" block={false} icon="retry">Try again</Button>`. */
   action?: ReactNode;
   /** Right slot, e.g. an OverflowMenu with "Discard" (P6). */
   trailing?: ReactNode;
@@ -42,8 +41,8 @@ export function StatusRow({ state, title, body, action, trailing, failedTitle = 
       )}
     >
       <div className="flex items-start gap-3">
-        {state === "done" && <Icon icon={CircleCheck} className="mt-0.5 shrink-0 text-success" />}
-        {state === "failed" && <Icon icon={CircleAlert} className="mt-0.5 shrink-0 text-danger" />}
+        {state === "done" && <Icon icon="success" className="mt-0.5 shrink-0 text-success" />}
+        {state === "failed" && <Icon icon="alert" className="mt-0.5 shrink-0 text-danger" />}
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           <p className={cn("text-body font-medium break-words", state === "failed" && failedTitle === "danger" ? "text-danger" : "text-text-1")}>{title}</p>
           {body && <p className="text-caption text-text-2">{body}</p>}

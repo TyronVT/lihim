@@ -1,6 +1,5 @@
 "use client";
 
-import { ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { Button, Icon, ListRow, Notice, Sheet, SkeletonList } from "@/components";
@@ -28,11 +27,11 @@ export function GroupSwitcher({ groupId, groupName }: { groupId: string; groupNa
         >
           <span className="truncate">{groupName}</span>
           <span className="sr-only">, {copy.home.switcherLabel}</span>
-          <Icon icon={ChevronDown} className="shrink-0 text-text-2" />
+          <Icon icon="chevronDown" className="shrink-0 text-text-2" />
         </button>
       }
       footer={
-        <Button asChild variant="secondary">
+        <Button icon="createGroup" asChild variant="secondary">
           <Link href="/groups/new" onClick={() => setOpen(false)}>
             {copy.group.create}
           </Link>
@@ -54,7 +53,7 @@ function SwitcherList({ currentId, onPick }: { currentId: string; onPick: () => 
         tone="danger"
         title={copy.errors.generic}
         action={
-          <Button variant="secondary" onClick={groups.reload}>
+          <Button icon="retry" variant="secondary" onClick={groups.reload}>
             {copy.common.retry}
           </Button>
         }

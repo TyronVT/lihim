@@ -47,7 +47,7 @@ export function PollNotFound() {
           title={copy.errors.notFound}
           body={copy.vote.notFoundBody}
           action={
-            <Button asChild variant="secondary">
+            <Button icon="groups" asChild variant="secondary">
               <Link href="/">{copy.home.title}</Link>
             </Button>
           }
@@ -66,7 +66,7 @@ export function PollLoadError({ onRetry }: { onRetry: () => void }) {
           tone="danger"
           title={copy.errors.generic}
           action={
-            <Button variant="secondary" onClick={onRetry}>
+            <Button icon="retry" variant="secondary" onClick={onRetry}>
               {copy.common.retry}
             </Button>
           }

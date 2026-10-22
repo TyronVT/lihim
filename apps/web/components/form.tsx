@@ -2,7 +2,6 @@
 
 import * as RadioGroup from "@radix-ui/react-radio-group";
 import * as SwitchPrimitive from "@radix-ui/react-switch";
-import { Minus, Plus } from "lucide-react";
 import { useId, type InputHTMLAttributes, type ReactNode, type Ref, type TextareaHTMLAttributes } from "react";
 import { copy } from "@/lib/copy";
 import { cn } from "@/lib/cn";
@@ -257,7 +256,7 @@ export function Stepper({ value, onChange, min = 0, max = 999, step = 1, label, 
       </span>
       <div className="flex items-center gap-3">
         <button type="button" className={btn} aria-label={copy.common.decrease} onClick={() => set(value - step)} disabled={disabled || value <= min}>
-          <Icon icon={Minus} />
+          <Icon icon="minus" />
         </button>
         <div
           id={id}
@@ -285,7 +284,7 @@ export function Stepper({ value, onChange, min = 0, max = 999, step = 1, label, 
           {unit && <span className="text-label text-text-2">{unit}</span>}
         </div>
         <button type="button" className={btn} aria-label={copy.common.increase} onClick={() => set(value + step)} disabled={disabled || value >= max}>
-          <Icon icon={Plus} />
+          <Icon icon="plus" />
         </button>
       </div>
       {hint && (

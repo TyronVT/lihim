@@ -57,8 +57,7 @@ export function HashChip({ value, label, head = 6, tail = 4, className }: HashCh
             </button>
           }
           footer={
-            <Button variant="secondary" onClick={() => copyText(value)}>
-              <Icon icon="copy" />
+            <Button variant="secondary" icon="copy" onClick={() => copyText(value)}>
               {copy.common.copy}
             </Button>
           }

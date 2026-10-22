@@ -106,7 +106,7 @@ function NameForm({ saved }: { saved: string }) {
         autoCapitalize="words"
         enterKeyHint="done"
       />
-      <Button
+      <Button icon="check"
         type="submit"
         variant="secondary"
         block={false}
@@ -149,7 +149,12 @@ function AlertsControl() {
       checked={state === "on"}
       onCheckedChange={onChange}
       disabled={busy}
-      label={copy.settings.alertsSwitch}
+      label={
+        <span className="flex items-center gap-2">
+          <Icon icon="alerts" className="shrink-0 text-text-2" />
+          {copy.settings.alertsSwitch}
+        </span>
+      }
       description={copy.settings.alertsHelp}
     />
   );
@@ -174,7 +179,7 @@ function AccountControl({ name }: { name: string }) {
   return (
     <div className="flex flex-col gap-3">
       {name && <p className="text-body text-text-1">{copy.settings.signedInAs(name)}</p>}
-      <Button variant="secondary" onClick={onSignOut} loading={busy} loadingLabel={copy.settings.signingOut}>
+      <Button icon="signOut" variant="secondary" onClick={onSignOut} loading={busy} loadingLabel={copy.settings.signingOut}>
         {copy.settings.signOut}
       </Button>
       <p className="text-caption text-text-3">{copy.settings.signOutBody}</p>

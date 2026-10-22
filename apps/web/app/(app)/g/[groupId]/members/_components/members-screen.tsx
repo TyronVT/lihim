@@ -1,6 +1,5 @@
 "use client";
 
-import { ChevronRight, UserMinus } from "lucide-react";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import {
   AnonymityBanner,
@@ -47,8 +46,7 @@ export function MembersScreen({ groupId }: { groupId: string }) {
       groupId={groupId}
       groupName={admin.name}
       trigger={
-        <Button>
-          <Icon icon="invite" />
+        <Button icon="invite">
           {copy.roster.inviteCta}
         </Button>
       }
@@ -212,7 +210,7 @@ function Roster({ group, onChanged }: { group: Group; onChanged: () => void }) {
               className="-ml-2 inline-flex min-h-12 items-center gap-1.5 rounded-md px-2 text-heading text-text-1 transition-colors duration-fast hover:bg-surface"
             >
               <Icon
-                icon={ChevronRight}
+                icon="chevronRight"
                 className={cn("shrink-0 text-text-2 transition-transform duration-fast", showRemoved && "rotate-90")}
               />
               {copy.roster.removedSection(removedTotal)}
@@ -234,6 +232,7 @@ function Roster({ group, onChanged }: { group: Group; onChanged: () => void }) {
         title={target ? copy.members.removeTitle(target.displayName) : copy.members.remove}
         body={copy.members.removeBody}
         confirmLabel={copy.members.removeConfirm}
+        confirmIcon="removeMember"
         busyLabel={copy.common.loading}
         destructive
         onConfirm={remove}
@@ -305,7 +304,7 @@ function AddingMembers({ groupId, onAdded }: { groupId: string; onAdded: () => v
         title={copy.addingMembers.failed(state.count)}
         body={copy.addingMembers.failedBody}
         action={
-          <Button variant="secondary" block={false} onClick={() => void run(state.count)}>
+          <Button icon="retry" variant="secondary" block={false} onClick={() => void run(state.count)}>
             {copy.addingMembers.retry}
           </Button>
         }
@@ -322,7 +321,7 @@ function MemberList({ members, label, onRemove }: { members: Member[]; label: st
     !m.isAdmin && (
       <OverflowMenu
         label={copy.roster.options(m.displayName)}
-        items={[{ label: copy.members.remove, icon: UserMinus, onSelect: () => onRemove(m), destructive: true }]}
+        items={[{ label: copy.members.remove, icon: "removeMember", onSelect: () => onRemove(m), destructive: true }]}
         className={className}
       />
     );

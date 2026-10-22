@@ -1,4 +1,3 @@
-import { ChevronRight, Settings } from "lucide-react";
 import Link from "next/link";
 import { copy } from "@/lib/copy";
 import { cn } from "@/lib/cn";
@@ -25,13 +24,13 @@ export function FooterLinks({ settings, className }: FooterLinksProps) {
       <Link href="/privacy" className={row}>
         <Icon icon="anonymous" className="shrink-0" />
         <span className="flex-1">{copy.shell.privacy}</span>
-        <Icon icon={ChevronRight} className="shrink-0 text-text-3" />
+        <Icon icon="chevronRight" className="shrink-0 text-text-3" />
       </Link>
       {settings && (
         <Link href="/settings" className={cn(row, "border-t border-border")}>
-          <Icon icon={Settings} className="shrink-0" />
+          <Icon icon="settings" className="shrink-0" />
           <span className="flex-1">{copy.shell.settings}</span>
-          <Icon icon={ChevronRight} className="shrink-0 text-text-3" />
+          <Icon icon="chevronRight" className="shrink-0 text-text-3" />
         </Link>
       )}
     </nav>

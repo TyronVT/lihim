@@ -179,13 +179,13 @@ function VoteBody({ data, onReload }: { data: VoteData; onReload: () => void }) 
   let primary: ReactNode = null;
   if (answered) {
     primary = (
-      <Button asChild>
+      <Button icon="results" asChild>
         <Link href={resultsHref}>{copy.vote.seeResults}</Link>
       </Button>
     );
   } else if (canAnswer && stage.kind !== "late") {
     primary = (
-      <Button
+      <Button icon="send"
         onClick={() => void send()}
         disabled={selected === null}
         loading={busy}
@@ -346,7 +346,7 @@ function FailureNotice({ reason, onReload }: { reason: FailureReason; onReload: 
         tone="danger"
         title={copy.vote.invalid}
         action={
-          <Button variant="secondary" onClick={onReload}>
+          <Button icon="retry" variant="secondary" onClick={onReload}>
             {copy.common.retry}
           </Button>
         }

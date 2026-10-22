@@ -1,6 +1,5 @@
 "use client";
 
-import { Share2 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Button, ConfirmSheet, Icon, Notice, Sheet, Skeleton, notify } from "@/components";
 import { copy } from "@/lib/copy";
@@ -105,7 +104,7 @@ export function InviteSheet({ groupId, groupName, trigger }: InviteSheetProps) {
   };
 
   const makeNew = (
-    <Button variant={view.kind === "off" ? "primary" : "secondary"} onClick={mint} loading={making} loadingLabel={copy.invite.making}>
+    <Button icon="invite" variant={view.kind === "off" ? "primary" : "secondary"} onClick={mint} loading={making} loadingLabel={copy.invite.making}>
       {copy.invite.makeNew}
     </Button>
   );
@@ -115,13 +114,11 @@ export function InviteSheet({ groupId, groupName, trigger }: InviteSheetProps) {
       makeNew
     ) : view.kind === "link" && view.invite.url ? (
       <>
-        <Button onClick={copyLink}>
-          <Icon icon="copy" />
+        <Button icon="copy" onClick={copyLink}>
           {copy.invite.copyCta}
         </Button>
         {canShare && (
-          <Button variant="secondary" onClick={share}>
-            <Icon icon={Share2} />
+          <Button variant="secondary" icon="share" onClick={share}>
             {copy.invite.shareCta}
           </Button>
         )}
@@ -146,7 +143,7 @@ export function InviteSheet({ groupId, groupName, trigger }: InviteSheetProps) {
               tone="danger"
               title={copy.invite.failed}
               action={
-                <Button variant="secondary" onClick={load}>
+                <Button icon="retry" variant="secondary" onClick={load}>
                   {copy.common.retry}
                 </Button>
               }
@@ -170,6 +167,7 @@ export function InviteSheet({ groupId, groupName, trigger }: InviteSheetProps) {
         title={copy.invite.turnOffTitle}
         body={copy.invite.turnOffBody}
         confirmLabel={copy.invite.turnOffConfirm}
+        confirmIcon="linkOff"
         busyLabel={copy.invite.turningOff}
         destructive
         onConfirm={turnOff}
@@ -202,7 +200,7 @@ function LinkDetails({ invite, url, onTurnOff }: { invite: ActiveInvite; url: st
           {invite.expiresAt ? copy.invite.expires(formatWhen(invite.expiresAt)) : copy.invite.noExpiry}
         </span>
       </p>
-      <Button variant="ghost" block={false} onClick={onTurnOff} className="-ml-2 self-start px-2 text-danger hover:text-danger">
+      <Button icon="linkOff" variant="ghost" block={false} onClick={onTurnOff} className="-ml-2 self-start px-2 text-danger hover:text-danger">
         {copy.invite.turnOff}
       </Button>
     </>

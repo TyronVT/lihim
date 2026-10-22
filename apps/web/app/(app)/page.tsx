@@ -24,7 +24,7 @@ export default function HomePage() {
         <DesktopHome />
       </Screen>
       <PinnedFooter>
-        <Button asChild>
+        <Button icon="createGroup" asChild>
           <Link href="/groups/new">{copy.group.create}</Link>
         </Button>
       </PinnedFooter>

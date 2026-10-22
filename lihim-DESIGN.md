@@ -256,24 +256,42 @@ Rules:
 
 ## Iconography (UI)
 
-- **Lucide** (ships with shadcn/ui), 1.75 px stroke, 20 px default / 24 px in
-  app bar, colour `currentColor`.
+- **Lihim line icons**, our own set (replaces Lucide). Inventory, drawing rules
+  and placement rules: [`design/ICONS.md`](design/ICONS.md). Code:
+  `apps/web/components/glyphs/` through `Icon` / `Icons`
+  (`apps/web/components/icons.tsx`); contact sheet at `/dev/icons`.
+- Same grammar as Lucide so it sits next to Geist: 24 grid, 1.75 px stroke,
+  round caps and joins, no fills, colour `currentColor`. 20 px default, 24 px in
+  the app bar, 16 px in chips and inline links, 14 px in pills.
+- What makes it ours: the **withheld gap** (closed outlines leave a ~2 px gap at
+  the upper right), the **hood** (people are the Mark's pointed hood, never a
+  circle on a bust), the **ballot slip** (poll actions use an `rx 3` slip), and
+  short, calm arrowheads. Rectangles use `rx 3`.
 - Fixed mapping so meaning never drifts:
 
-| Concept | Lucide icon |
+| Concept | Icon name |
 |---|---|
-| Anonymous / hidden | `eye-off` |
-| Members | `users` |
-| Verified | `shield-check` |
-| Poll | `vote` |
-| Closing time | `clock` |
-| Small-group warning | `triangle-alert` |
+| Anonymous / hidden | `anonymous` (almond eye with a broken diagonal) |
+| Members | `members` (two hoods) |
+| Verified | `verified` (shield with a tick, gap at upper right) |
+| Poll | `poll` (slip into a slot) |
+| Closing time | `closing` (clock with a gap at 1 o'clock) |
+| Small-group warning | `warning` |
 | Copy hash | `copy` |
-| Verify / audit | `search-check` |
-| Invite | `link` |
+| Verify / audit | `verify` (lens with a tick) |
+| Invite | `invite` (two open hooks) |
 
+- Major actions carry one leading icon (via `<Button icon>`): Sign in with
+  passkey `passkey` · Create an account `createAccount` · Sign out `signOut` ·
+  Create group `createGroup` · Join / Open group `join` · Your groups `groups` ·
+  Send answer `send` · New poll `newPoll` · Open poll `openPoll` · See results
+  `results` · Try again `retry` · Share link `share` · Turn off link `linkOff` ·
+  Remove member `removeMember` · Leave group `leave` · Turn on alerts `alerts` ·
+  Settings `settings` · outside links `external`. Ghost text buttons stay text
+  only (the one exception is "Turn off this link", which carries `linkOff`).
 - Never use a lock icon to mean "anonymous" — a lock implies encryption of
-  content, which is a different promise.
+  content, which is a different promise. No crypto imagery (chains, coins,
+  blocks, wallets).
 
 ## Motion
 
@@ -395,7 +413,8 @@ From the build spec's product rules, made concrete:
   states. Keep originals (PNG/PSD) in `design/source/`, not `public/`.
 - Grain: a 128 × 128 tiled PNG under 4 KB, applied as `body::before` with
   `pointer-events: none`.
-- No icon fonts. Lucide via `lucide-react` with tree-shaking.
+- No icon fonts and no icon library. UI icons are inline SVG components from
+  `components/glyphs/` (`createGlyph`), so only the icons a page uses ship.
 
 ## Open questions
 

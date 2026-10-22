@@ -1,9 +1,9 @@
-import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { copy } from "@/lib/copy";
 import { cn } from "@/lib/cn";
-import { APP_BAR_ICON_SIZE, Icon } from "./icons";
+import type { Glyph } from "./glyphs";
+import { APP_BAR_ICON_SIZE, Icon, type IconName } from "./icons";
 import { HIDE_IN_SHELL_LG } from "./shell-classes";
 
 export interface AppBarProps {
@@ -46,7 +46,7 @@ export function AppBar({ title, backHref, backLabel = copy.common.back, right, w
             aria-label={backLabel}
             className="inline-flex size-12 shrink-0 items-center justify-center rounded-md text-text-1 transition-colors duration-fast hover:bg-surface"
           >
-            <Icon icon={ArrowLeft} size={APP_BAR_ICON_SIZE} />
+            <Icon icon="arrowLeft" size={APP_BAR_ICON_SIZE} />
           </Link>
         )}
         <h1 className="min-w-0 flex-1 truncate text-heading text-text-1">{title}</h1>
@@ -59,7 +59,7 @@ export function AppBar({ title, backHref, backLabel = copy.common.back, right, w
 export interface AppBarActionProps {
   /** Required: icon-only buttons need a name. */
   label: string;
-  icon: Parameters<typeof Icon>[0]["icon"];
+  icon: IconName | Glyph;
   onClick?: () => void;
   href?: string;
 }

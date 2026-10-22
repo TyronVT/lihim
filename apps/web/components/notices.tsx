@@ -1,7 +1,7 @@
-import { CircleAlert, CircleCheck, Info } from "lucide-react";
 import type { ReactNode } from "react";
 import { copy } from "@/lib/copy";
 import { cn } from "@/lib/cn";
+import type { Glyph } from "./glyphs";
 import { Icon, type IconName } from "./icons";
 
 export interface AnonymityBannerProps {
@@ -61,11 +61,11 @@ export function SmallGroupWarning({ variant = "inline", memberCount = 0, minMemb
 }
 
 type NoticeTone = "info" | "success" | "warning" | "danger";
-const TONE: Record<NoticeTone, { icon: IconName | typeof Info; className: string }> = {
-  info: { icon: Info, className: "text-text-2" },
-  success: { icon: CircleCheck, className: "text-success" },
+const TONE: Record<NoticeTone, { icon: IconName | Glyph; className: string }> = {
+  info: { icon: "info", className: "text-text-2" },
+  success: { icon: "success", className: "text-success" },
   warning: { icon: "warning", className: "text-warning" },
-  danger: { icon: CircleAlert, className: "text-danger" },
+  danger: { icon: "alert", className: "text-danger" },
 };
 
 export interface NoticeProps {
@@ -73,7 +73,7 @@ export interface NoticeProps {
   title: ReactNode;
   children?: ReactNode;
   /** Override the tone's icon (e.g. "verified"). */
-  icon?: IconName | typeof Info;
+  icon?: IconName | Glyph;
   action?: ReactNode;
   className?: string;
 }

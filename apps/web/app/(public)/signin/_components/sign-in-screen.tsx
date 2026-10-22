@@ -148,12 +148,12 @@ export function SignInScreen() {
                 enterKeyHint="go"
                 disabled={busy}
               />
-              <Button type="submit" loading={busy} loadingLabel={copy.signin.creating}>
+              <Button type="submit" icon="createAccount" loading={busy} loadingLabel={copy.signin.creating}>
                 {copy.signin.continue}
               </Button>
             </form>
           ) : (
-            <Button onClick={onSignIn} loading={busy} loadingLabel={copy.signin.waiting}>
+            <Button onClick={onSignIn} icon="passkey" loading={busy} loadingLabel={copy.signin.waiting}>
               {copy.signin.cta}
             </Button>
           )}

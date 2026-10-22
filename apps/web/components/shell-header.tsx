@@ -1,4 +1,3 @@
-import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
@@ -47,7 +46,7 @@ export function ShellHeader({
           href={back.href}
           className="-ml-2 inline-flex min-h-10 items-center gap-1.5 self-start rounded-md px-2 text-label text-text-2 transition-colors duration-fast hover:text-text-1"
         >
-          <Icon icon={ArrowLeft} size={18} />
+          <Icon icon="arrowLeft" size={16} />
           {back.label}
         </Link>
       )}

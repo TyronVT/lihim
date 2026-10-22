@@ -1,6 +1,5 @@
 "use client";
 
-import { Share2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
@@ -137,7 +136,7 @@ function CreateForm({ onCreated }: { onCreated: (c: Created) => void }) {
   };
 
   const primary = (
-    <Button type="submit" form={FORM_ID} loading={create.pending} loadingLabel={copy.createGroup.creating}>
+    <Button icon="createGroup" type="submit" form={FORM_ID} loading={create.pending} loadingLabel={copy.createGroup.creating}>
       {copy.group.create}
     </Button>
   );
@@ -223,7 +222,7 @@ function CreateForm({ onCreated }: { onCreated: (c: Created) => void }) {
                 tone="danger"
                 title={copy.createGroup.failed}
                 action={
-                  <Button type="submit" variant="secondary">
+                  <Button icon="retry" type="submit" variant="secondary">
                     {copy.common.retry}
                   </Button>
                 }
@@ -272,7 +271,7 @@ function Ready({ created }: { created: Created }) {
 
   const groupHref = `/g/${encodeURIComponent(group.id)}`;
   const primary = (
-    <Button asChild>
+    <Button icon="arrowRight" asChild>
       <Link href={groupHref}>{copy.createGroup.goToGroup}</Link>
     </Button>
   );
@@ -326,13 +325,11 @@ function Ready({ created }: { created: Created }) {
               </p>
             )}
             <div className="flex gap-2">
-              <Button variant="secondary" onClick={copyLink} disabled={!url}>
-                <Icon icon="copy" />
+              <Button variant="secondary" icon="copy" onClick={copyLink} disabled={!url}>
                 {copy.createGroup.copyLink}
               </Button>
               {canShare && (
-                <Button variant="secondary" onClick={share} disabled={!url}>
-                  <Icon icon={Share2} />
+                <Button variant="secondary" icon="share" onClick={share} disabled={!url}>
                   {copy.createGroup.share}
                 </Button>
               )}

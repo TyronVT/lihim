@@ -1,6 +1,5 @@
 "use client";
 
-import { ChevronRight } from "lucide-react";
 import { Button, CountBadge, EmptyState, Icon, ListRow, Notice, Section, SkeletonList } from "@/components";
 import { copy } from "@/lib/copy";
 import { repo, type GroupSummary } from "@/lib/data";
@@ -20,7 +19,7 @@ export function GroupList() {
         tone="danger"
         title={copy.errors.generic}
         action={
-          <Button variant="secondary" onClick={groups.reload}>
+          <Button icon="retry" variant="secondary" onClick={groups.reload}>
             {copy.common.retry}
           </Button>
         }
@@ -70,7 +69,7 @@ function GroupRow({ group: g }: { group: GroupSummary }) {
               {copy.group.adminTag}
             </span>
           )}
-          <Icon icon={ChevronRight} className="text-text-3" />
+          <Icon icon="chevronRight" className="text-text-3" />
         </span>
       }
     />

@@ -1,6 +1,5 @@
 "use client";
 
-import { LogOut } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -62,7 +61,7 @@ export function GroupHome({ groupId }: { groupId: string }) {
   const title = data ? <GroupSwitcher groupId={groupId} groupName={data.name} /> : copy.hub.title;
   const leaveItem: OverflowMenuItem = {
     label: copy.leaveGroup.menuItem,
-    icon: LogOut,
+    icon: "leave",
     onSelect: () => setLeaveOpen(true),
     destructive: true,
   };
@@ -126,17 +125,13 @@ function HubScreen({ group, leaveItem, onLeave }: { group: Group; leaveItem: Ove
               groupId={group.id}
               groupName={group.name}
               trigger={
-                <Button variant="secondary">
-                  <Icon icon="invite" />
+                <Button variant="secondary" icon="invite">
                   {copy.group.invite}
                 </Button>
               }
             />
-            <Button asChild>
-              <Link href={`${groupHref(group.id)}/polls/new`}>
-                <Icon icon="poll" />
-                {copy.group.newPoll}
-              </Link>
+            <Button asChild icon="newPoll">
+              <Link href={`${groupHref(group.id)}/polls/new`}>{copy.group.newPoll}</Link>
             </Button>
           </>
         ) : (
@@ -161,7 +156,7 @@ function HubScreen({ group, leaveItem, onLeave }: { group: Group; leaveItem: Ove
           tone="danger"
           title={copy.errors.generic}
           action={
-            <Button variant="secondary" onClick={polls.reload}>
+            <Button icon="retry" variant="secondary" onClick={polls.reload}>
               {copy.common.retry}
             </Button>
           }
@@ -191,11 +186,8 @@ function Overview({ group, onLeave }: { group: Group; onLeave: () => void }) {
             caption={isAdmin ? copy.hub.adminCaption : copy.hub.memberCaption(group.createdByName)}
           />
           {isAdmin && (
-            <Button asChild variant="secondary" block={false} className={cn(SHOW_FLEX_IN_SHELL_LG, "xl:w-full")}>
-              <Link href={`${groupHref(group.id)}/members`}>
-                <Icon icon="members" />
-                {copy.group.manageMembers}
-              </Link>
+            <Button asChild variant="secondary" icon="members" block={false} className={cn(SHOW_FLEX_IN_SHELL_LG, "xl:w-full")}>
+              <Link href={`${groupHref(group.id)}/members`}>{copy.group.manageMembers}</Link>
             </Button>
           )}
         </div>
@@ -226,7 +218,7 @@ function Overview({ group, onLeave }: { group: Group; onLeave: () => void }) {
             onClick={onLeave}
             className="flex min-h-12 items-center gap-3 rounded-md px-1 text-left text-label text-danger transition-colors duration-fast hover:bg-surface"
           >
-            <Icon icon={LogOut} className="shrink-0" />
+            <Icon icon="leave" className="shrink-0" />
             {copy.leaveGroup.menuItem}
           </button>
         )}
@@ -243,19 +235,13 @@ function AdminActions({ group }: { group: Group }) {
     <nav aria-label={copy.hub.adminActions} className={HIDE_IN_SHELL_LG}>
       <ul className="grid grid-cols-3 gap-2">
         <li>
-          <Button asChild variant="secondary" className={tile}>
-            <Link href={`${base}/members`}>
-              <Icon icon="members" />
-              {copy.group.members}
-            </Link>
+          <Button asChild variant="secondary" icon="members" className={tile}>
+            <Link href={`${base}/members`}>{copy.group.members}</Link>
           </Button>
         </li>
         <li>
-          <Button asChild variant="secondary" className={tile}>
-            <Link href={`${base}/polls/new`}>
-              <Icon icon="poll" />
-              {copy.group.newPoll}
-            </Link>
+          <Button asChild variant="secondary" icon="newPoll" className={tile}>
+            <Link href={`${base}/polls/new`}>{copy.group.newPoll}</Link>
           </Button>
         </li>
         <li>
@@ -263,8 +249,7 @@ function AdminActions({ group }: { group: Group }) {
             groupId={group.id}
             groupName={group.name}
             trigger={
-              <Button variant="secondary" className={tile}>
-                <Icon icon="invite" />
+              <Button variant="secondary" icon="invite" className={tile}>
                 {copy.group.invite}
               </Button>
             }
@@ -296,7 +281,7 @@ function PollSections({ group, polls, onChanged }: { group: Group; polls: Poll[]
             body={isAdmin ? copy.group.noPollsAdminBody : copy.group.noPollsBody}
             action={
               isAdmin && (
-                <Button asChild variant="secondary">
+                <Button icon="newPoll" asChild variant="secondary">
                   <Link href={`${groupHref(group.id)}/polls/new`}>{copy.hub.newPollCta}</Link>
                 </Button>
               )
@@ -420,7 +405,7 @@ function OpeningRow({ poll, onChanged }: { poll: Poll; onChanged: () => void }) 
         body={body}
         action={
           !closingPassed && (
-            <Button variant="secondary" block={false} onClick={retry} loading={retrying} loadingLabel={copy.pollOpening.retrying}>
+            <Button icon="retry" variant="secondary" block={false} onClick={retry} loading={retrying} loadingLabel={copy.pollOpening.retrying}>
               {copy.pollOpening.retry}
             </Button>
           )
@@ -474,6 +459,7 @@ function LeaveGroupSheet({ group, open, onOpenChange }: { group: Group; open: bo
       title={copy.leaveGroup.title(group.name)}
       body={copy.leaveGroup.body}
       confirmLabel={copy.leaveGroup.confirm}
+      confirmIcon="leave"
       busyLabel={copy.leaveGroup.leaving}
       destructive
       onConfirm={leave}

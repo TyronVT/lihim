@@ -40,14 +40,14 @@ Theme: dark default; light via `prefers-color-scheme` or the user override (`<Th
 
 | Component | File | Props (key) | Notes |
 |---|---|---|---|
-| `AppBar` | `components/app-bar.tsx` | `title?, backHref?, backLabel?, right?, wide?, keepOnDesktop?` | Sticky 56 px; title is the page `<h1>`; back = Lucide 24 px. **Hidden at ≥ lg inside a shell** |
-| `AppBarAction` | `components/app-bar.tsx` | `label, icon, onClick? \| href?` | 48 px icon button for `right` |
+| `AppBar` | `components/app-bar.tsx` | `title?, backHref?, backLabel?, right?, wide?, keepOnDesktop?` | Sticky 56 px; title is the page `<h1>`; back = `arrowLeft` 24 px. **Hidden at ≥ lg inside a shell** |
+| `AppBarAction` | `components/app-bar.tsx` | `label, icon: IconName \| Glyph, onClick? \| href?` | 48 px icon button for `right` |
 | `Screen` | `components/screen.tsx` | `wide?, width?: "page" \| "form" \| "reading", withFooter?, header?, rail?, railPlacement?, railFrom?, railLabel?, …main attrs` | `<main id="main">` 480 → 560 (md) → 720/560/640 (lg); `wide` 720 → 960 (lg). See desktop section |
 | `Section` | `components/screen.tsx` | `title?, action?, children` | Heading + 12 px stacked children |
 | `Card` | `components/screen.tsx` | `tone?: "surface" \| "raised"` | r16, p16, border, `shadow-raised` |
 | `PageHeader` | `components/page-header.tsx` | `title, description?, illustration?, illustrationSize?=64, illustrationAlt?, level?=2, display?` | In-content heading (+ hero) |
 | `PinnedFooter` | `components/pinned-footer.tsx` | `children, wide?` | Fixed bottom, 16 px + safe-area; pair with `<Screen withFooter>`. **Hidden at ≥ lg inside a shell** |
-| `Button` | `components/button.tsx` | `variant?: primary \| secondary \| destructive \| ghost, block?=true, asChild?, loading?, loadingLabel?` | h48 r12; `asChild` wraps `<Link>`; destructive always behind `ConfirmSheet` |
+| `Button` | `components/button.tsx` | `variant?: primary \| secondary \| destructive \| ghost, block?=true, asChild?, loading?, loadingLabel?, icon?: IconName \| Glyph` | h48 r12; `asChild` wraps `<Link>`; destructive always behind `ConfirmSheet`. `icon` = one 20 px leading decorative icon (also inside an `asChild` `<Link>`), dropped while `loadingLabel` shows. Use the prop, not a child `<Icon>` |
 | `OptionGroup` | `components/option-group.tsx` | `options: PollOption[], value: number \| null, onSelect(v), phase?: "idle" \| "proving" \| "done", label? \| labelledBy?, disabled?` | Real radiogroup (P4): tap/Space/arrows/Home/End select; Enter on the selected row bubbles to the screen's "Send answer"; proving = lock + fade others 40 % + silver line |
 | `OptionRow` | `components/option-group.tsx` | `label, description?, selected, locked?, faded?, proving?, done?, tabbable?, onSelect?` | Presentational row (inside a `role="radiogroup"`) |
 | `RatingRow` | `components/option-group.tsx` | `value: number \| null, onSelect(n), phase?, label? \| labelledBy?, disabled?, minLabel?, maxLabel?` | Five 56 px squares, "3 out of 5", captions "Hindi maganda"/"Napakaganda"; static "Proving…" under reduced motion |
@@ -60,17 +60,17 @@ Theme: dark default; light via `prefers-color-scheme` or the user override (`<Th
 | `CountBadge` | `components/badges.tsx` | `count, label` | Small `--text-1` count pill (open polls); `label` is the sr-only words |
 | `AnonymityBanner` | `components/notices.tsx` | `children?` (default `copy.anonymity.banner`) | Use `copy.anonymity.bannerVote/bannerJoin/bannerCreatePoll` per screen |
 | `SmallGroupWarning` | `components/notices.tsx` | `variant?: "inline" \| "blocking", memberCount?, minMembers?, action?` | inline when `isSmallGroup(frozenSize)`; blocking on L5 below `minMembers` |
-| `Notice` | `components/notices.tsx` | `tone?: info \| success \| warning \| danger, title, children?, icon?, action?` | Icon + words status card (already answered, not sent, errors) |
+| `Notice` | `components/notices.tsx` | `tone?: info \| success \| warning \| danger, title, children?, icon?: IconName \| Glyph, action?` | Icon + words status card (already answered, not sent, errors) |
 | `MemberCountBlock` | `components/member-count-block.tsx` | `count, caption?` | Group illustration 64 + count in `display` |
 | `HashChip` | `components/hash-chip.tsx` | `value, label, head?=6, tail?=4` | Mono, middle-out; tap text → full-value sheet; copy icon → clipboard + toast. 48 px box (R9) |
 | `EmptyState` | `components/empty-state.tsx` | `illustration?, title, body?, action?` | 96 px hero; omit `illustration` (quiet card) when the screen already has its one hero (L3) |
-| `OverflowMenu` | `components/overflow-menu.tsx` | `label?, items: {label, icon?, onSelect, destructive?}[], align?` | 48 px "…" trigger + 48 px items (Radix, non-modal); destructive items open a `ConfirmSheet` |
+| `OverflowMenu` | `components/overflow-menu.tsx` | `label?, items: {label, icon?: IconName \| Glyph, onSelect, destructive?}[], align?` | 48 px "…" trigger + 48 px items (Radix, non-modal); destructive items open a `ConfirmSheet` |
 | `Illustration` | `components/illustration.tsx` | `name: "mark" \| "verified" \| "poll" \| "group", size?=96, alt?="", priority?, tile?=true` | 2×/3× WebP srcSet; ink-950 tile in light mode; `priority` only on L2/L6 success |
 | `Wordmark` | `components/wordmark.tsx` | `size?=22` | "Lihim", Geist 600, −1.5 % |
 | `Lockup` | `components/wordmark.tsx` | `markSize?=40, tagline?` | Mark (≥ 48) or Glyph + wordmark |
 | `ListRow` | `components/list-row.tsx` | `title, meta?, status?, leading?, trailing?, href? \| onClick?` | Card row ≥ 56 px (groups, poll cards, roster). No avatars. `status` = pill in the meta row (R10); `trailing={null}` = no chevron |
 | `Sheet` | `components/sheet.tsx` | `open?, onOpenChange?, trigger?, title, hideTitle?, description?, children?, footer?` | Radix Dialog: bottom sheet < 768, centred 480 dialog ≥ 768 (focus trap, Esc, focus returns) |
-| `ConfirmSheet` | `components/sheet.tsx` | `title, body?, confirmLabel, onConfirm (async ok; throw to stay open), destructive?, trigger? \| open/onOpenChange, busyLabel?` | Remove member etc. |
+| `ConfirmSheet` | `components/sheet.tsx` | `title, body?, confirmLabel, onConfirm (async ok; throw to stay open), destructive?, trigger? \| open/onOpenChange, busyLabel?, confirmIcon?: IconName \| Glyph` | Remove member etc. |
 | `TextField` / `TextArea` | `components/form.tsx` | `label, hint?, error?, counter?, …input attrs` | 16 px text; error wires aria-invalid/aria-describedby |
 | `Field` | `components/form.tsx` | `id, label, hint?, error?, counter?, children` | Shell for custom controls |
 | `Switch` | `components/form.tsx` | `checked, onCheckedChange, label, description?, disabled?` | Whole row (≥ 56 px) is a `<label>` hit target (R9). L5 hide results, L10 alerts |
@@ -79,7 +79,8 @@ Theme: dark default; light via `prefers-color-scheme` or the user override (`<Th
 | `ThemeSelect` | `components/theme-select.tsx` | `className?` | System / Dark / Light |
 | `Skeleton` / `SkeletonList` | `components/skeleton.tsx` | `className?` / `count?` | Static placeholders (no shimmer) |
 | `Toaster` / `notify` | `components/toast.tsx` | `notify(msg)`, `notify.success(msg)`, `notify.error(msg)` | Already mounted in layout; 4 s, one at a time; bottom full-width (compact), bottom centre 400 (md), bottom right 400 (lg) |
-| `Icon` / `Icons` | `components/icons.tsx` | `icon: IconName \| LucideIcon, size?=20, label?` | Concepts: `anonymous` eye-off · `members` users · `verified` shield-check · `poll` vote · `closing` clock · `warning` triangle-alert · `copy` · `verify` search-check · `invite` link. **Never a lock.** |
+| `Icon` / `Icons` | `components/icons.tsx` | `icon: IconName \| Glyph, size?=20, label?, strokeWidth?=1.75` | Lihim line icons (`design/ICONS.md`, 42 names; contact sheet `/dev/icons`). Decorative (`aria-hidden`) unless `label`. Sizes: 20 buttons/rows · 24 app bar (`APP_BAR_ICON_SIZE`) · 16 chips/inline links · 14 pills. Concepts: `anonymous` · `members` · `verified` · `poll` · `closing` · `warning` · `copy` · `verify` · `invite`. Actions: `passkey` `createAccount` `signOut` `settings` `alerts` `groups` `createGroup` `join` `send` `newPoll` `openPoll` `retry` `share` `linkOff` `removeMember` `leave` `results` `external`. UI: `arrowLeft/Right/Up/Down` `chevronRight/Down` `chevronsUpDown` `plus` `minus` `close` `check` `success` `alert` `info` `more`. **Never a lock.** |
+| `createGlyph` / `Glyph` | `components/glyphs/glyph.tsx` | `createGlyph(name, svgChildren)` → `Glyph` (`size?`, SVG props) | Factory for a new icon: 24 viewBox, `currentColor`, stroke 1.75, round caps/joins, no fill. Add the glyph to a `glyphs/*.tsx` file, register its name in `Icons`, follow the drawing rules in `design/ICONS.md`, then check it on `/dev/icons`. `@/components` re-exports the `Glyph` / `GlyphProps` types only; import `createGlyph` from `@/components/glyphs` |
 
 ## Library (`lib/`)
 
@@ -182,7 +183,7 @@ the FocusedShell when signed out and the AppShell when signed in. `(public)` rou
 
 ```tsx
 const primary = (
-  <Button onClick={invite} loading={busy} loadingLabel={copy.invite.making}>{copy.roster.inviteCta}</Button>
+  <Button icon="invite" onClick={invite} loading={busy} loadingLabel={copy.invite.making}>{copy.roster.inviteCta}</Button>
 );
 return (
   <>

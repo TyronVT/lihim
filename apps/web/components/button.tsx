@@ -1,7 +1,9 @@
-import { Slot } from "@radix-ui/react-slot";
+import { Slot, Slottable } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 import type { ButtonHTMLAttributes, Ref } from "react";
 import { cn } from "@/lib/cn";
+import type { Glyph } from "./glyphs";
+import { Icon, type IconName } from "./icons";
 
 export const buttonVariants = cva(
   [
@@ -40,6 +42,11 @@ export interface ButtonProps
    */
   loading?: boolean;
   loadingLabel?: string;
+  /**
+   * Leading icon before the words (design/ICONS.md → Placement rules): one per button, 20 px,
+   * decorative. Dropped while the loading label shows.
+   */
+  icon?: IconName | Glyph;
   ref?: Ref<HTMLButtonElement>;
 }
 
@@ -54,12 +61,14 @@ export function Button({
   asChild,
   loading,
   loadingLabel,
+  icon,
   disabled,
   children,
   type,
   ...props
 }: ButtonProps) {
   const Comp = asChild ? Slot : "button";
+  const showLoading = Boolean(loading && loadingLabel && !asChild);
   return (
     <Comp
       className={cn(buttonVariants({ variant, block }), className)}
@@ -68,7 +77,9 @@ export function Button({
       type={asChild ? undefined : (type ?? "button")}
       {...props}
     >
-      {loading && loadingLabel && !asChild ? loadingLabel : children}
+      {icon && !showLoading && <Icon icon={icon} />}
+      {/* Slottable: with asChild the icon goes inside the child (e.g. <Link>), before its words. */}
+      <Slottable>{showLoading ? loadingLabel : children}</Slottable>
     </Comp>
   );
 }

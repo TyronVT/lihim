@@ -1,6 +1,5 @@
 "use client";
 
-import { ArrowDown, ArrowUp, ChevronsUpDown } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { Icon } from "./icons";
@@ -137,7 +136,7 @@ export function DataTable<T>({
                     >
                       {c.header}
                       <Icon
-                        icon={active ? (sort!.direction === "ascending" ? ArrowUp : ArrowDown) : ChevronsUpDown}
+                        icon={active ? (sort!.direction === "ascending" ? "arrowUp" : "arrowDown") : "chevronsUpDown"}
                         size={14}
                         className="shrink-0"
                       />

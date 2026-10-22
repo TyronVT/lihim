@@ -1,6 +1,5 @@
 "use client";
 
-import { Bell } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import {
@@ -126,7 +125,7 @@ export function JoinFlow({ token }: { token: string }) {
             title={copy.errors.generic}
             className="lg:mx-auto lg:w-full lg:max-w-app"
             action={
-              <Button variant="secondary" onClick={preview.reload}>
+              <Button variant="secondary" icon="retry" onClick={preview.reload}>
                 {copy.common.retry}
               </Button>
             }
@@ -143,11 +142,11 @@ export function JoinFlow({ token }: { token: string }) {
               body={copy.join.invalidBody}
               action={
                 signedIn ? (
-                  <Button asChild variant="secondary">
+                  <Button asChild variant="secondary" icon="groups">
                     <Link href="/">{copy.join.home}</Link>
                   </Button>
                 ) : (
-                  <Button asChild variant="secondary">
+                  <Button asChild variant="secondary" icon="anonymous">
                     <Link href="/privacy">{copy.join.whatIsLihim}</Link>
                   </Button>
                 )
@@ -218,11 +217,18 @@ function InvitePreviewScreen({
   const formId = "join-form";
   const primary = (className?: string) =>
     alreadyMember ? (
-      <Button asChild className={className}>
+      <Button asChild icon="join" className={className}>
         <Link href={groupHref}>{copy.join.openGroup}</Link>
       </Button>
     ) : (
-      <Button type="submit" form={formId} loading={busy} loadingLabel={busyLabel} className={className}>
+      <Button
+        type="submit"
+        form={formId}
+        icon={signedIn ? "join" : "passkey"}
+        loading={busy}
+        loadingLabel={busyLabel}
+        className={className}
+      >
         {copy.join.cta}
       </Button>
     );
@@ -316,7 +322,7 @@ function Joined({ groupId }: { groupId: string }) {
   useEffect(() => heading.current?.focus(), []);
 
   const primary = (className?: string) => (
-    <Button asChild className={className}>
+    <Button asChild icon="join" className={className}>
       <Link href={`/g/${encodeURIComponent(groupId)}`}>{copy.join.openGroup}</Link>
     </Button>
   );
@@ -380,7 +386,7 @@ function AlertsAsk() {
   return (
     <AlertsCard title={copy.alerts.askTitle} body={copy.alerts.askBody}>
       <div className="flex flex-col gap-2 sm:flex-row">
-        <Button variant="secondary" onClick={turnOn} loading={busy} loadingLabel={copy.alerts.turnOn} className="sm:flex-1">
+        <Button variant="secondary" icon="alerts" onClick={turnOn} loading={busy} loadingLabel={copy.alerts.turnOn} className="sm:flex-1">
           {copy.alerts.turnOn}
         </Button>
         <Button variant="ghost" onClick={notNow} disabled={busy} className="sm:flex-1">
@@ -395,7 +401,7 @@ function AlertsCard({ title, body, children }: { title: string; body?: string; c
   return (
     <Card className="flex flex-col gap-4 lg:bg-surface-raised lg:shadow-none">
       <div className="flex items-start gap-3">
-        <Icon icon={Bell} className="mt-0.5 shrink-0 text-text-2" />
+        <Icon icon="alerts" className="mt-0.5 shrink-0 text-text-2" />
         <div className="flex flex-col gap-1">
           <p className="text-heading text-text-1">{title}</p>
           {body && <p className="text-body text-text-2">{body}</p>}

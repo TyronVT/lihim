@@ -53,7 +53,7 @@ export function ReviewSheet({
       description={t.reviewBody}
       footer={
         <>
-          <Button onClick={onConfirm} loading={busy} loadingLabel={t.opening}>
+          <Button icon="openPoll" onClick={onConfirm} loading={busy} loadingLabel={t.opening}>
             {t.openCta}
           </Button>
           <Button variant="secondary" onClick={() => onOpenChange(false)} disabled={busy}>

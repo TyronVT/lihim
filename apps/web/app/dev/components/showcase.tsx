@@ -1,6 +1,6 @@
 "use client";
 
-import { UserMinus } from "lucide-react";
+import Link from "next/link";
 import { useRef, useState, type ReactNode } from "react";
 import {
   AnonymityBanner,
@@ -94,7 +94,7 @@ const MEMBER_COLUMNS: DataTableColumn<DemoMember>[] = [
         <OverflowMenu
           label={copy.roster.options(m.name)}
           className={REVEAL_ON_ROW_HOVER}
-          items={[{ label: copy.members.remove, icon: UserMinus, onSelect: () => {}, destructive: true }]}
+          items={[{ label: copy.members.remove, icon: "removeMember", onSelect: () => {}, destructive: true }]}
         />
       ),
   },
@@ -183,7 +183,7 @@ function VoteDemo({ kind }: { kind: "single" | "rating" }) {
         <RatingRow label="Rate the GA last Friday" value={value} onSelect={pick} phase={answerPhase} />
       )}
       {phase !== "recorded" && (
-        <Button onClick={send} disabled={value === null} loading={answerPhase === "proving"} loadingLabel={copy.vote.sending}>
+        <Button icon="send" onClick={send} disabled={value === null} loading={answerPhase === "proving"} loadingLabel={copy.vote.sending}>
           {copy.vote.send}
         </Button>
       )}
@@ -269,6 +269,13 @@ export function Showcase() {
         </Block>
 
         <Block title="Icons (fixed mapping)">
+          <Link
+            href="/dev/icons"
+            className="inline-flex min-h-12 items-center gap-2 self-start text-label text-text-2 underline underline-offset-4 hover:text-text-1"
+          >
+            Icon contact sheet
+            <Icon icon="arrowRight" size={16} />
+          </Link>
           <ul className="grid grid-cols-3 gap-3">
             {(Object.keys(Icons) as IconName[]).map((k) => (
               <li key={k} className="flex items-center gap-2 text-label text-text-2">
@@ -280,19 +287,21 @@ export function Showcase() {
         </Block>
 
         <Block title="Buttons">
-          <Button>Create group</Button>
-          <Button variant="secondary">Invite link</Button>
-          <Button variant="destructive">Remove member</Button>
+          <Button icon="passkey">Sign in with passkey</Button>
+          <Button icon="createGroup">Create group</Button>
+          <Button variant="secondary" icon="invite">Invite link</Button>
+          <Button variant="destructive" icon="removeMember">Remove member</Button>
           <Button variant="ghost">Who can see what</Button>
-          <Button loading loadingLabel="Creating…">
+          {/* The loading label drops the icon. */}
+          <Button icon="createGroup" loading loadingLabel="Creating…">
             Create group
           </Button>
           <Button disabled>Disabled</Button>
           <div className="flex gap-3">
-            <Button block={false} variant="secondary">
+            <Button block={false} variant="secondary" icon="retry">
               Inline
             </Button>
-            <Button block={false}>Inline primary</Button>
+            <Button block={false} icon="newPoll">Inline primary</Button>
           </div>
         </Block>
 
@@ -383,8 +392,7 @@ export function Showcase() {
             memberCount={6}
             minMembers={8}
             action={
-              <Button variant="secondary">
-                <Icon icon="invite" />
+              <Button variant="secondary" icon="invite">
                 {copy.group.invite}
               </Button>
             }
@@ -436,7 +444,7 @@ export function Showcase() {
             trailing={
               <OverflowMenu
                 label={copy.roster.options("Paolo Santos")}
-                items={[{ label: copy.members.remove, icon: UserMinus, onSelect: () => {}, destructive: true }]}
+                items={[{ label: copy.members.remove, icon: "removeMember", onSelect: () => {}, destructive: true }]}
               />
             }
           />
@@ -452,7 +460,7 @@ export function Showcase() {
             title={copy.pollOpening.didntOpen}
             body="Officer evaluation: Treasurer"
             action={
-              <Button variant="secondary" block={false}>
+              <Button variant="secondary" block={false} icon="retry">
                 {copy.pollOpening.retry}
               </Button>
             }
@@ -468,7 +476,7 @@ export function Showcase() {
             title={copy.addingMembers.failed(3)}
             body={copy.addingMembers.failedBody}
             action={
-              <Button variant="secondary" block={false}>
+              <Button variant="secondary" block={false} icon="retry">
                 {copy.addingMembers.retry}
               </Button>
             }
@@ -512,7 +520,7 @@ export function Showcase() {
               back={{ href: `/g/${MOCK_GROUP_IDS.upsining}`, label: "UP Sining" }}
               title={copy.roster.title}
               context={`${copy.members.count(31)} · ${copy.members.rosterNote}`}
-              actions={<Button>{copy.roster.inviteCta}</Button>}
+              actions={<Button icon="invite">{copy.roster.inviteCta}</Button>}
             />
           </Card>
           <FocusedTopBar className="relative rounded-lg border" />
@@ -524,7 +532,7 @@ export function Showcase() {
             illustration="poll"
             title={copy.group.noPollsTitle}
             body={copy.group.noPollsAdminBody}
-            action={<Button variant="secondary">{copy.group.newPoll}</Button>}
+            action={<Button variant="secondary" icon="newPoll">{copy.group.newPoll}</Button>}
           />
           {/* No hero: for screens that already spent their one illustration (L3). */}
           <EmptyState title={copy.hub.noPastTitle} body={copy.hub.noPastBody} />
@@ -562,10 +570,11 @@ export function Showcase() {
             <p className="text-body text-text-2">Sheet body content.</p>
           </Sheet>
           <ConfirmSheet
-            trigger={<Button variant="destructive">{copy.members.remove}</Button>}
+            trigger={<Button variant="destructive" icon="removeMember">{copy.members.remove}</Button>}
             title={copy.members.removeTitle("Paolo Santos")}
             body={copy.members.removeBody}
             confirmLabel={copy.members.removeConfirm}
+            confirmIcon="removeMember"
             destructive
             onConfirm={async () => {
               await new Promise((r) => setTimeout(r, 600));

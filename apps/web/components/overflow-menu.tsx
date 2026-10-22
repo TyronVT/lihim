@@ -1,14 +1,14 @@
 "use client";
 
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import { Ellipsis, type LucideIcon } from "lucide-react";
 import { copy } from "@/lib/copy";
 import { cn } from "@/lib/cn";
+import type { Glyph } from "./glyphs";
 import { Icon, type IconName } from "./icons";
 
 export interface OverflowMenuItem {
   label: string;
-  icon?: IconName | LucideIcon;
+  icon?: IconName | Glyph;
   onSelect: () => void;
   /** --danger label. Destructive items must open a ConfirmSheet, never act directly. */
   destructive?: boolean;
@@ -38,7 +38,7 @@ export function OverflowMenu({ label = copy.common.moreOptions, items, align = "
           className,
         )}
       >
-        <Icon icon={Ellipsis} />
+        <Icon icon="more" />
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>
         <DropdownMenu.Content

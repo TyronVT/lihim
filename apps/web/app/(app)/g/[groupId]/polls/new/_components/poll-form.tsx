@@ -1,6 +1,5 @@
 "use client";
 
-import { Plus, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
@@ -225,7 +224,7 @@ export function PollForm({ group, backHref }: { group: Group; backHref: string }
   const showSmallWarning = !blocked && isSmallGroup(memberCount);
 
   const primary = (
-    <Button type="submit" form={FORM_ID} disabled={blocked} loading={opening} loadingLabel={t.opening}>
+    <Button icon="openPoll" type="submit" form={FORM_ID} disabled={blocked} loading={opening} loadingLabel={t.opening}>
       {t.openCta}
     </Button>
   );
@@ -272,8 +271,7 @@ export function PollForm({ group, backHref }: { group: Group; backHref: string }
                   groupId={group.id}
                   groupName={group.name}
                   trigger={
-                    <Button variant="secondary">
-                      <Icon icon="invite" />
+                    <Button variant="secondary" icon="invite">
                       {t.blockedInvite}
                     </Button>
                   }
@@ -348,7 +346,7 @@ export function PollForm({ group, backHref }: { group: Group; backHref: string }
                             onClick={() => removeOption(i)}
                             className="inline-flex size-12 shrink-0 items-center justify-center rounded-md text-text-2 transition-colors duration-fast hover:bg-surface hover:text-text-1 disabled:opacity-40"
                           >
-                            <Icon icon={X} />
+                            <Icon icon="close" />
                           </button>
                         )}
                       </li>
@@ -360,8 +358,8 @@ export function PollForm({ group, backHref }: { group: Group; backHref: string }
                   variant="secondary"
                   onClick={addOption}
                   disabled={blocked || options.length >= MAX_POLL_OPTIONS}
+                  icon="plus"
                 >
-                  <Icon icon={Plus} />
                   {t.addOption}
                 </Button>
                 {showErrors && optionsError ? (

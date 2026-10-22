@@ -1,12 +1,12 @@
 "use client";
 
 import * as Dialog from "@radix-ui/react-dialog";
-import { X } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { copy } from "@/lib/copy";
 import { cn } from "@/lib/cn";
 import { Button } from "./button";
-import { Icon } from "./icons";
+import type { Glyph } from "./glyphs";
+import { Icon, type IconName } from "./icons";
 
 export interface SheetProps {
   open?: boolean;
@@ -58,7 +58,7 @@ export function Sheet({ open, onOpenChange, trigger, title, hideTitle, descripti
               aria-label={copy.common.close}
               className="-mr-2 inline-flex size-12 shrink-0 items-center justify-center rounded-md text-text-2 hover:text-text-1"
             >
-              <Icon icon={X} />
+              <Icon icon="close" />
             </Dialog.Close>
           </div>
           {children && <div className="overflow-y-auto px-gutter pt-4 pb-4">{children}</div>}
@@ -79,6 +79,8 @@ export interface ConfirmSheetProps {
   title: ReactNode;
   body?: ReactNode;
   confirmLabel: string;
+  /** Leading icon on the confirm button (e.g. "removeMember", "linkOff", "leave"). */
+  confirmIcon?: IconName | Glyph;
   cancelLabel?: string;
   /** Destructive confirm (remove member). */
   destructive?: boolean;
@@ -95,6 +97,7 @@ export function ConfirmSheet({
   title,
   body,
   confirmLabel,
+  confirmIcon,
   cancelLabel = copy.common.cancel,
   destructive,
   onConfirm,
@@ -128,7 +131,7 @@ export function ConfirmSheet({
       description={body}
       footer={
         <>
-          <Button variant={destructive ? "destructive" : "primary"} onClick={confirm} loading={busy} loadingLabel={busyLabel}>
+          <Button variant={destructive ? "destructive" : "primary"} icon={confirmIcon} onClick={confirm} loading={busy} loadingLabel={busyLabel}>
             {confirmLabel}
           </Button>
           <Button variant="ghost" onClick={() => setOpen(false)} disabled={busy}>

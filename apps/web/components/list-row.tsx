@@ -1,4 +1,3 @@
-import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
@@ -43,7 +42,7 @@ export function ListRow({ title, meta, status, leading, trailing, href, onClick,
           meta && <span className="text-caption text-text-2">{meta}</span>
         )}
       </span>
-      {trailing === undefined ? (href ? <Icon icon={ChevronRight} className="shrink-0 text-text-3" /> : null) : trailing}
+      {trailing === undefined ? (href ? <Icon icon="chevronRight" className="shrink-0 text-text-3" /> : null) : trailing}
     </>
   );
   const cls = cn(

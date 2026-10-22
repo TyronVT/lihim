@@ -1,6 +1,5 @@
 "use client";
 
-import { ChevronDown } from "lucide-react";
 import { useId, useMemo, useState, type ReactNode } from "react";
 import {
   Button,
@@ -126,7 +125,7 @@ export function VerifyScreen({ pollId }: { pollId: string }) {
               tone="danger"
               title={copy.verify.unreachable}
               action={
-                <Button variant="secondary" onClick={query.reload}>
+                <Button variant="secondary" icon="retry" onClick={query.reload}>
                   {copy.verify.retry}
                 </Button>
               }
@@ -269,6 +268,8 @@ function AuditView({ audit }: { audit: PollAudit }) {
               className="text-text-2 underline underline-offset-4 hover:text-text-1"
             >
               {copy.verify.footnoteLink}
+              {/* Outside link: trailing, sized to the caption line. */}
+              <Icon icon="external" size={14} className="ml-0.5 inline-block align-[-2px]" />
             </a>
           )}
         </p>
@@ -401,7 +402,7 @@ function AnswerTable({ audit }: { audit: PollAudit }) {
     <div className="flex flex-col gap-card-gap">
       <Button variant="secondary" aria-expanded={open} aria-controls={regionId} onClick={() => setOpen((o) => !o)}>
         {open ? copy.verify.hideTable : copy.verify.showTable(total)}
-        <Icon icon={ChevronDown} className={cn("transition-transform duration-base ease-standard", open && "rotate-180")} />
+        <Icon icon="chevronDown" className={cn("transition-transform duration-base ease-standard", open && "rotate-180")} />
       </Button>
       <div id={regionId} hidden={!open} className="flex flex-col gap-3">
         <p className="text-caption text-text-2">{copy.verify.tableCaption}</p>

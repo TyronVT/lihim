@@ -1,6 +1,5 @@
 "use client";
 
-import { Check } from "lucide-react";
 import { useCallback, useId, useRef, type KeyboardEvent, type ReactNode } from "react";
 import { copy } from "@/lib/copy";
 import { cn } from "@/lib/cn";
@@ -133,7 +132,7 @@ export function OptionRow({
         </span>
       )}
       {done && selected ? (
-        <Icon icon={Check} className="text-success" />
+        <Icon icon="check" className="text-success" />
       ) : (
         <span
           aria-hidden
@@ -286,7 +285,7 @@ export function RatingRow({
                 locked && !selected && "opacity-40",
               )}
             >
-              {selected && phase === "done" ? <Icon icon={Check} className="text-success" /> : n}
+              {selected && phase === "done" ? <Icon icon="check" className="text-success" /> : n}
               {selected && phase === "proving" && <ProgressLine />}
             </div>
           );

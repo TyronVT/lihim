@@ -1,6 +1,5 @@
 "use client";
 
-import { Plus, Settings } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
@@ -136,12 +135,15 @@ export function Sidebar() {
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto px-3 pb-4">
-        <h2 className="px-3 pt-2 pb-1 text-overline text-text-3 uppercase">{copy.shell.yourGroups}</h2>
+        <h2 className="flex items-center gap-2 px-3 pt-2 pb-1 text-overline text-text-3 uppercase">
+          <Icon icon="groups" size={16} />
+          {copy.shell.yourGroups}
+        </h2>
         {desktop ? (
           <SidebarGroups currentGroupId={ctx?.currentGroupId ?? null} pathname={pathname} version={ctx?.groupsVersion ?? 0} />
         ) : null}
         <Link href="/groups/new" className={sidebarItem} aria-current={pathname === "/groups/new" ? "page" : undefined}>
-          <Icon icon={Plus} className="shrink-0" />
+          <Icon icon="createGroup" className="shrink-0" />
           {copy.shell.newGroup}
         </Link>
       </div>
@@ -152,7 +154,7 @@ export function Sidebar() {
           {copy.shell.privacy}
         </Link>
         <Link href="/settings" className={sidebarItem} aria-current={pathname === "/settings" ? "page" : undefined}>
-          <Icon icon={Settings} className="shrink-0" />
+          <Icon icon="settings" className="shrink-0" />
           {copy.shell.settings}
         </Link>
         {session.status === "signed-in" && session.user.displayName && (
@@ -253,7 +255,7 @@ export function FocusedTopBar({ className }: { className?: string }) {
             <span className="sr-only sm:not-sr-only">{copy.shell.privacy}</span>
           </Link>
           {pathname !== "/signin" && session.status !== "loading" && (
-            <Button asChild variant="secondary" block={false} className="px-4">
+            <Button asChild variant="secondary" block={false} className="px-4" icon={signedIn ? "groups" : "passkey"}>
               <Link href={signedIn ? "/" : signInHref(pathname)}>{signedIn ? copy.shell.groupsHome : copy.shell.signIn}</Link>
             </Button>
           )}

@@ -1,6 +1,5 @@
 "use client";
 
-import { CircleCheck } from "lucide-react";
 import { copy } from "@/lib/copy";
 import { cn } from "@/lib/cn";
 import { Icon } from "./icons";
@@ -35,7 +34,7 @@ export function VoteStatus({ phase, slow, className }: VoteStatusProps) {
         <div className="flex flex-col items-center gap-4 py-4 text-center animate-rise-in">
           <Illustration name="poll" size={96} priority />
           <p className="flex items-center gap-2 text-heading text-text-1">
-            <Icon icon={CircleCheck} className="text-success" />
+            <Icon icon="success" className="text-success" />
             {copy.vote.recorded}
           </p>
         </div>

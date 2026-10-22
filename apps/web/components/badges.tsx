@@ -1,4 +1,3 @@
-import { CircleAlert } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { copy } from "@/lib/copy";
@@ -71,10 +70,10 @@ export function CountBadge({ count, label, words, className }: CountBadgeProps) 
   );
 }
 
-const STATUS: Record<PollPillStatus, { label: string; className: string; dot?: boolean; icon?: "closing" | typeof CircleAlert }> = {
+const STATUS: Record<PollPillStatus, { label: string; className: string; dot?: boolean; icon?: "closing" | "alert" }> = {
   // P6: a draft is a poll whose create transaction is in flight — "Opening…", never "Draft".
   draft: { label: copy.status.draft, className: "text-text-3 border-border" },
-  "didnt-open": { label: copy.status.didntOpen, className: "text-danger border-danger/40", icon: CircleAlert },
+  "didnt-open": { label: copy.status.didntOpen, className: "text-danger border-danger/40", icon: "alert" },
   open: { label: copy.status.open, className: "text-text-1 border-border-control", dot: true },
   "closing-soon": { label: copy.status.closingSoon, className: "text-warning border-warning/40", icon: "closing" },
   closed: { label: copy.status.closed, className: "text-text-2 border-border" },
