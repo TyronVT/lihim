@@ -1,7 +1,13 @@
 import type { Poll, PollOption } from "./data/types";
 
-/** Status as shown in StatusPill. "closing-soon" is display-only, derived from closesAt. */
+/**
+ * Status as shown in StatusPill. "closing-soon" is display-only, derived from closesAt.
+ * "draft" = the create transaction is in flight or failed (P6); see pollPillStatus.
+ */
 export type PollDisplayStatus = "draft" | "open" | "closing-soon" | "closed";
+
+/** StatusPill's input: a display status, or "didnt-open" for a draft whose create tx failed (P6). */
+export type PollPillStatus = PollDisplayStatus | "didnt-open";
 
 /** An open poll shows "Closing soon" inside this window. Matches the 2-hour reminder push × 3. */
 export const CLOSING_SOON_MS = 6 * 3_600_000;
@@ -23,6 +29,12 @@ export function pollDisplayStatus(poll: Pick<Poll, "status" | "closesAt">, now: 
   if (poll.status === "closed" || closesAt <= now) return "closed";
   if (closesAt - now <= CLOSING_SOON_MS) return "closing-soon";
   return "open";
+}
+
+/** For StatusPill: like pollDisplayStatus, but a failed draft reads "didnt-open" ("Didn't open"). */
+export function pollPillStatus(poll: Pick<Poll, "status" | "closesAt" | "openState">, now: number = Date.now()): PollPillStatus {
+  if (poll.status === "draft" && poll.openState === "failed") return "didnt-open";
+  return pollDisplayStatus(poll, now);
 }
 
 /** True when the anonymity set is small enough that people could guess by elimination. */

@@ -326,3 +326,89 @@ test('a poll becoming open calls the notify function with the cron secret', asyn
   assert.deepEqual(calls[0].body, { type: 'poll_opened', poll_id: '22222222-2222-4222-8222-000000000009' });
   assert.equal(calls[0].headers['x-lihim-cron'], 's3cret');
 });
+
+// --- lifecycle (lihim-UIUX-SPEC.md P3, P5, P6) -------------------------------------
+
+const DRAFT_PENDING = '22222222-2222-4222-8222-0000000000d1';
+const DRAFT_FAILED = '22222222-2222-4222-8222-0000000000d2';
+const DRAFT_STALE = '22222222-2222-4222-8222-0000000000d3';
+
+test('poll_open_states: the admin tells "Opening…" from "Didn\'t open"; nobody else can ask', async () => {
+  for (const [id, title] of [[DRAFT_PENDING, 'Pending?'], [DRAFT_FAILED, 'Failed?'], [DRAFT_STALE, 'Stale?']]) {
+    await db.query(
+      `insert into public.polls (id, group_id, title, options, kind, closes_at)
+       values ($1, $2, $3, '["A","B"]', 'single', now() + interval '1 day')`,
+      [id, GROUP, title],
+    );
+  }
+  await db.query(`insert into public.pending_txs (group_id, poll_id, kind, status) values ($1, $2, 'create_poll', 'submitted')`, [GROUP, DRAFT_PENDING]);
+  await db.query(`insert into public.pending_txs (group_id, poll_id, kind, status, error) values ($1, $2, 'create_poll', 'failed', 'x')`, [GROUP, DRAFT_FAILED]);
+  await db.query(
+    `insert into public.pending_txs (group_id, poll_id, kind, status, created_at) values ($1, $2, 'create_poll', 'pending', now() - interval '1 hour')`,
+    [GROUP, DRAFT_STALE],
+  );
+
+  const states = Object.fromEntries(
+    (await rows('authenticated', ADMIN, `select poll_id, open_state from public.poll_open_states($1)`, [GROUP])).map((r) => [r.poll_id, r.open_state]),
+  );
+  assert.equal(states[DRAFT_PENDING], 'pending');
+  assert.equal(states[DRAFT_FAILED], 'failed');
+  assert.equal(states[DRAFT_STALE], 'failed');
+  // Only drafts are listed, and the result carries no tx hash or error text.
+  assert.ok(Object.keys(states).every((id) => [DRAFT_PENDING, DRAFT_FAILED, DRAFT_STALE, '22222222-2222-4222-8222-000000000009'].includes(id)));
+  await rejects('authenticated', MEMBER, `select * from public.poll_open_states($1)`, [GROUP], /not_group_admin/);
+  await rejects('anon', null, `select * from public.poll_open_states($1)`, [GROUP], /permission denied/);
+});
+
+test('discard_draft_poll: admin discards a failed draft, never one still opening or already open', async () => {
+  await rejects('authenticated', MEMBER, `select public.discard_draft_poll($1)`, [DRAFT_FAILED], /poll_not_found|not_group_admin/);
+  await rejects('authenticated', ADMIN, `select public.discard_draft_poll($1)`, [DRAFT_PENDING], /poll_opening/);
+  await rejects('authenticated', ADMIN, `select public.discard_draft_poll($1)`, [POLL_CLOSED], /poll_not_draft/);
+  await rows('authenticated', ADMIN, `select public.discard_draft_poll($1)`, [DRAFT_FAILED]);
+  await rows('authenticated', ADMIN, `select public.discard_draft_poll($1)`, [DRAFT_STALE]);
+  const left = (await db.query(`select id from public.polls where id = any($1::uuid[])`, [[DRAFT_PENDING, DRAFT_FAILED, DRAFT_STALE]])).rows;
+  assert.deepEqual(left.map((r) => r.id), [DRAFT_PENDING]);
+  await rejects('anon', null, `select public.discard_draft_poll($1)`, [DRAFT_PENDING], /permission denied/);
+});
+
+test('leave_group: a member leaves (off-chain), can rejoin with an invite; the admin cannot leave', async () => {
+  const LEAVER = '00000000-0000-4000-8000-0000000000dd';
+  await db.query(`insert into auth.users (id, raw_user_meta_data) values ($1, '{"display_name":"Leaver"}')`, [LEAVER]);
+  await db.query(`insert into public.group_members (group_id, user_id, display_name) values ($1, $2, 'Leaver')`, [GROUP, LEAVER]);
+  const before = (await db.query(`select member_count from public.groups where id = $1`, [GROUP])).rows[0].member_count;
+
+  await rejects('authenticated', ADMIN, `select public.leave_group($1)`, [GROUP], /admin_cannot_leave/);
+  await rejects('anon', null, `select public.leave_group($1)`, [GROUP], /permission denied/);
+  await rows('authenticated', LEAVER, `select public.leave_group($1)`, [GROUP]);
+  await rejects('authenticated', LEAVER, `select public.leave_group($1)`, [GROUP], /not_a_member/);
+
+  assert.deepEqual(await rows('authenticated', LEAVER, `select id from public.groups`), []);
+  assert.deepEqual(await rows('authenticated', LEAVER, `select * from public.group_members`), []);
+  // Nothing on-chain changes (D5), so the anonymity set is untouched.
+  assert.equal((await db.query(`select member_count from public.groups where id = $1`, [GROUP])).rows[0].member_count, before);
+
+  await db.query(`insert into public.invites (group_id, token_hash, max_uses) values ($1, encode(sha256(convert_to('rejoin-token','UTF8')),'hex'), 5)`, [GROUP]);
+  const [r] = await rows('authenticated', LEAVER, `select public.redeem_invite('rejoin-token', 'Leaver') as g`);
+  assert.equal(r.g, GROUP);
+});
+
+test('revoking an invite (expires_at = now) makes it unusable', async () => {
+  await db.query(`insert into public.invites (group_id, token_hash, max_uses) values ($1, encode(sha256(convert_to('revoke-me','UTF8')),'hex'), 5)`, [GROUP]);
+  const updated = await as('authenticated', ADMIN, (tx) =>
+    tx.query(`update public.invites set expires_at = now() where token_hash = encode(sha256(convert_to('revoke-me','UTF8')),'hex') returning id`),
+  );
+  assert.equal(updated.rows.length, 1);
+  const [p] = await rows('anon', null, `select invite_state from public.invite_preview('revoke-me')`);
+  assert.equal(p.invite_state, 'expired');
+  const none = await as('authenticated', MEMBER, (tx) => tx.query(`update public.invites set expires_at = null returning id`));
+  assert.equal(none.rows.length, 0, 'members cannot touch invites');
+});
+
+test('update_display_name: renames the profile and the roster rows admins see', async () => {
+  await rows('authenticated', MEMBER, `select public.update_display_name($1)`, ['  New Name  ']);
+  assert.deepEqual(await rows('authenticated', MEMBER, `select display_name from public.profiles`), [{ display_name: 'New Name' }]);
+  const roster = await rows('authenticated', ADMIN, `select display_name from public.group_members where user_id = $1`, [MEMBER]);
+  assert.deepEqual(roster, [{ display_name: 'New Name' }]);
+  await rejects('authenticated', MEMBER, `select public.update_display_name('   ')`, [], /invalid_display_name/);
+  await rejects('anon', null, `select public.update_display_name('x')`, [], /permission denied/);
+});

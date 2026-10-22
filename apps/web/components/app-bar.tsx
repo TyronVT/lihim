@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { copy } from "@/lib/copy";
 import { cn } from "@/lib/cn";
 import { APP_BAR_ICON_SIZE, Icon } from "./icons";
+import { HIDE_IN_SHELL_LG } from "./shell-classes";
 
 export interface AppBarProps {
   /** Screen title, `heading` size, truncated to one line. */
@@ -16,20 +17,26 @@ export interface AppBarProps {
   right?: ReactNode;
   /** Widen the inner container to 720 to align with `<Screen wide>`. */
   wide?: boolean;
+  /**
+   * Keep showing at ≥ lg inside a shell. Default false: there the sidebar / focused top bar and
+   * the Screen's ShellHeader replace the app bar (lihim-UIUX-SPEC.md §3).
+   */
+  keepOnDesktop?: boolean;
   className?: string;
 }
 
 /**
  * Top app bar: sticky, 56 px, back arrow (Lucide 24 px) + title + optional right slot.
- * There's no global tab bar; this is the only navigation chrome.
+ * There's no global tab bar; this is the only navigation chrome on compact/medium. Inside a
+ * shell it hides itself at ≥ lg — give the Screen a `header={<ShellHeader …/>}` for that size.
  */
-export function AppBar({ title, backHref, backLabel = copy.common.back, right, wide, className }: AppBarProps) {
+export function AppBar({ title, backHref, backLabel = copy.common.back, right, wide, keepOnDesktop, className }: AppBarProps) {
   return (
-    <header className={cn("sticky top-0 z-30 bg-bg pt-[env(safe-area-inset-top)]", className)}>
+    <header className={cn("sticky top-0 z-30 bg-bg pt-[env(safe-area-inset-top)]", !keepOnDesktop && HIDE_IN_SHELL_LG, className)}>
       <div
         className={cn(
           "mx-auto flex h-14 w-full items-center gap-1 px-1",
-          wide ? "max-w-wide" : "max-w-app",
+          wide ? "max-w-wide" : "max-w-app md:max-w-form",
           !backHref && "pl-gutter",
         )}
       >

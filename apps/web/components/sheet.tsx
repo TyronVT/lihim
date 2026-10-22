@@ -24,8 +24,10 @@ export interface SheetProps {
 }
 
 /**
- * Bottom sheet (Radix Dialog): --surface, radius 16 top, slides up 200 ms, focus-trapped,
- * Esc / scrim tap closes. Max width 480 centred on larger screens.
+ * Responsive sheet (Radix Dialog; lihim-UIUX-SPEC.md §3 "ResponsiveSheet"):
+ * - compact (< 768): bottom sheet, radius 16 top, slides up 200 ms.
+ * - medium and up: centred 480 px dialog, radius 16, fades in with an 8 px rise.
+ * Both: focus-trapped, Esc / scrim click closes, focus returns to the opener.
  */
 export function Sheet({ open, onOpenChange, trigger, title, hideTitle, description, children, footer, className }: SheetProps) {
   return (
@@ -37,6 +39,9 @@ export function Sheet({ open, onOpenChange, trigger, title, hideTitle, descripti
           className={cn(
             "fixed inset-x-0 bottom-0 z-50 mx-auto flex max-h-[85dvh] w-full max-w-app flex-col rounded-t-lg border border-b-0 border-border bg-surface shadow-raised",
             "data-[state=open]:animate-sheet-in data-[state=closed]:animate-sheet-out",
+            // ≥ md: centred dialog. Centred with margins (not translate) so the animation's transform is free.
+            "md:inset-0 md:m-auto md:h-fit md:rounded-lg md:border-b",
+            "md:data-[state=open]:animate-dialog-in md:data-[state=closed]:animate-dialog-out",
             className,
           )}
         >
@@ -58,9 +63,9 @@ export function Sheet({ open, onOpenChange, trigger, title, hideTitle, descripti
           </div>
           {children && <div className="overflow-y-auto px-gutter pt-4 pb-4">{children}</div>}
           {footer && (
-            <div className="flex flex-col gap-3 px-gutter pt-2 pb-[calc(16px+env(safe-area-inset-bottom))]">{footer}</div>
+            <div className="flex flex-col gap-3 px-gutter pt-2 pb-[calc(16px+env(safe-area-inset-bottom))] md:pb-4">{footer}</div>
           )}
-          {!footer && <div className="pb-[env(safe-area-inset-bottom)]" />}
+          {!footer && <div className="pb-[env(safe-area-inset-bottom)] md:pb-2" />}
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

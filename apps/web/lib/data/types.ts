@@ -73,6 +73,16 @@ export interface Invite {
   expiresAt: ISODateString | null;
 }
 
+/**
+ * The group's current invite link as read back later (P3: invite sheet shows uses + expiry and
+ * "Turn off this link"). The DB keeps only token_hash, so the raw link is known only on the
+ * device that made it: `token`/`url` are null elsewhere, and the sheet offers "Make a new link".
+ */
+export interface ActiveInvite extends Omit<Invite, "token" | "url"> {
+  token: string | null;
+  url: string | null;
+}
+
 /** What L2 shows before joining. Readable without membership. */
 export interface InvitePreview {
   token: string;
@@ -93,8 +103,18 @@ export interface InvitePreview {
 
 export type PollKind = "single" | "yesno" | "rating";
 
-/** Stored status. "Closing soon" is derived for display — see lib/poll.ts. */
+/**
+ * Stored status. "Closing soon" is derived for display — see lib/poll.ts.
+ * "draft" is NOT a saved-for-later poll (P6: there is no save-as-draft): it is a poll whose
+ * create transaction is still pending or has failed. `Poll.openState` tells which.
+ */
 export type PollStatus = "draft" | "open" | "closed";
+
+/**
+ * P6, admin only, `status === "draft"` only: "pending" while the create transaction is in flight
+ * (L3 "Opening…"), "failed" when it didn't land (L3 "Didn't open · Try again"). null otherwise.
+ */
+export type PollOpenState = "pending" | "failed";
 
 export interface PollOption {
   /**
@@ -123,6 +143,8 @@ export interface Poll {
   /** Members frozen at open — the anonymity set and the turnout denominator. */
   frozenSize: number;
   status: PollStatus;
+  /** P6: pending vs failed for drafts (admin only); null for open/closed polls. */
+  openState: PollOpenState | null;
   /** Group root frozen at open. Null for drafts. */
   frozenRoot: Hex32 | null;
 }
@@ -143,6 +165,11 @@ export interface PollResult {
   average: number | null;
   /** Values of the leading option(s); several on a tie, empty when no answers/hidden. */
   leadingValues: number[];
+  /**
+   * When the cached tally/turnout last changed (indexer runs every minute). L7's freshness line
+   * ("Updated a minute ago"). null when unknown (e.g. nothing indexed yet).
+   */
+  updatedAt: ISODateString | null;
 }
 
 /** One answer on the public record. `nullifier` is shown as a "receipt" on L9 only. */
@@ -180,6 +207,11 @@ export interface CreateInviteInput {
   maxUses?: number | null;
   /** Hours until expiry; null = never. */
   expiresInHours?: number | null;
+}
+
+export interface GetMembersOptions {
+  /** Also return `status: "removed"` rows (L4's collapsed "Removed (n)" section). Default false. */
+  includeRemoved?: boolean;
 }
 
 export interface CreatePollInput {

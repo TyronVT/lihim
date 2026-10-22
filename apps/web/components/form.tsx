@@ -114,34 +114,42 @@ export interface SwitchProps {
   className?: string;
 }
 
-/** Labelled switch row (whole row ≥ 48 px). E.g. L5 "Hide results until closing". */
+/**
+ * Labelled switch row, e.g. L5 "Hide results until closing", L10 "Poll alerts". The WHOLE row
+ * (min 56 px) is the hit target (R9): it's a <label> for the switch, so a tap anywhere toggles.
+ */
 export function Switch({ checked, onCheckedChange, label, description, disabled, id: idProp, className }: SwitchProps) {
   const auto = useId();
   const id = idProp ?? auto;
   return (
-    <div className={cn("flex min-h-12 items-center justify-between gap-4", className)}>
-      <div className="flex flex-col">
-        <label htmlFor={id} className="text-body text-text-1">
+    <label
+      htmlFor={id}
+      className={cn(
+        "flex min-h-14 items-center justify-between gap-4",
+        disabled ? "cursor-default opacity-40" : "cursor-pointer",
+        className,
+      )}
+    >
+      <span className="flex flex-col">
+        <span id={`${id}-label`} className="text-body text-text-1">
           {label}
-        </label>
+        </span>
         {description && (
-          <p id={`${id}-desc`} className="text-caption text-text-3">
+          <span id={`${id}-desc`} className="text-caption text-text-3">
             {description}
-          </p>
+          </span>
         )}
-      </div>
+      </span>
       <SwitchPrimitive.Root
         id={id}
         checked={checked}
         onCheckedChange={onCheckedChange}
         disabled={disabled}
+        aria-labelledby={`${id}-label`}
         aria-describedby={description ? `${id}-desc` : undefined}
         className={cn(
           "relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border transition-colors duration-fast",
           "border-border-control bg-surface data-[state=checked]:border-accent data-[state=checked]:bg-accent",
-          "disabled:opacity-40",
-          // 28 px track, 48 px tap target (the label is tappable too).
-          "after:absolute after:inset-x-0 after:-inset-y-2.5 after:content-['']",
         )}
       >
         <SwitchPrimitive.Thumb
@@ -151,7 +159,7 @@ export function Switch({ checked, onCheckedChange, label, description, disabled,
           )}
         />
       </SwitchPrimitive.Root>
-    </div>
+    </label>
   );
 }
 

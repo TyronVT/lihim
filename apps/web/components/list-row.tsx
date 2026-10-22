@@ -8,9 +8,15 @@ export interface ListRowProps {
   title: ReactNode;
   /** Secondary line (caption): member count, closing time… */
   meta?: ReactNode;
+  /**
+   * R10 poll card: a StatusPill shown at the START of the meta row, so the title gets the full
+   * width. Pair with `trailing={null}` for no chevron:
+   * `<ListRow href title={q} status={<StatusPill …/>} meta="Today 10:00 AM · 16 of 31 answered" trailing={null} />`
+   */
+  status?: ReactNode;
   /** Leading slot (StatusPill, small icon). No avatars — Lihim never shows faces/initials. */
   leading?: ReactNode;
-  /** Trailing slot (StatusPill, overflow button). Defaults to a chevron when `href` is set. */
+  /** Trailing slot (role chip, overflow button). Defaults to a chevron when `href` is set; `null` = nothing. */
   trailing?: ReactNode;
   href?: string;
   onClick?: () => void;
@@ -22,15 +28,22 @@ export interface ListRowProps {
  * Titles wrap to two lines (poll questions get cut to a word or two at 360 px otherwise).
  * Renders a Link with `href`, a button with `onClick`, otherwise a plain div.
  */
-export function ListRow({ title, meta, leading, trailing, href, onClick, className }: ListRowProps) {
+export function ListRow({ title, meta, status, leading, trailing, href, onClick, className }: ListRowProps) {
   const body = (
     <>
       {leading}
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className="line-clamp-2 text-body font-medium break-words text-text-1">{title}</span>
-        {meta && <span className="text-caption text-text-2">{meta}</span>}
+        {status ? (
+          <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-caption text-text-2">
+            {status}
+            {meta}
+          </span>
+        ) : (
+          meta && <span className="text-caption text-text-2">{meta}</span>
+        )}
       </span>
-      {trailing ?? (href ? <Icon icon={ChevronRight} className="shrink-0 text-text-3" /> : null)}
+      {trailing === undefined ? (href ? <Icon icon={ChevronRight} className="shrink-0 text-text-3" /> : null) : trailing}
     </>
   );
   const cls = cn(

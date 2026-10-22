@@ -5,12 +5,23 @@
  * The default data layer (NEXT_PUBLIC_DATA=mock); lib/data/supabase.ts is the real one. Kept for
  * /dev/components, tests and offline UI work.
  *
- * Demo cast — the viewer is "Ana Reyes":
+ * Demo cast — the viewer is "Ana Reyes", signed in by default:
  * - UP Sining (31 members, Ana is admin): open single-choice poll, open rating poll,
- *   closed yes/no with results, closed single-choice with results, one draft.
+ *   closed yes/no with results, closed single-choice with results, one poll still opening
+ *   (P6 "Opening…") and one that didn't open (P6 "Didn't open · Try again"), 3 joins waiting
+ *   to be added (L4 "Adding 3 new members…"), 2 removed members, invite "sining-2026" (12 of 50).
  * - Phase 2 HOA, Camella Dasmariñas (54 members, Ana is member): open poll with hidden tally.
  * - BS Psych 3-B Thesis Circle (6 members, Ana is admin, min 8): blocked small-group state.
  * Invite tokens: "sining-2026" (valid), "hoa-phase2" (already member), "expired-demo" (invalid).
+ *
+ * Session (P1): signOut is real — it persists a signed-out flag in localStorage (MOCK_SESSION_KEY)
+ * so /signin is reachable and the auth gate can be tested; signIn/signUp clear it after a
+ * simulated passkey prompt. signUp keeps Ana's demo groups and only renames her.
+ *
+ * Failure states on demand (dev only): add `?mockFail=<kind>` to the page URL.
+ * - cancelled | no-passkey | unsupported → signIn/signUp reject with the matching Passkey*Error.
+ * - poll → createPoll/retryPoll leave the poll as "Didn't open" and reject.
+ * The seeded "Officer evaluation: Treasurer" draft is always in the failed state.
  *
  * Group ids are fixed uuids (MOCK_GROUP_IDS) because, like Supabase groups.id, they are the
  * HKDF info of the per-group identity (D1). With the "sdk" prover, getFrozenCommitments puts
@@ -19,8 +30,18 @@
  */
 import { groupIdentity } from "../identity";
 import type { LihimRepository } from "./index";
-import { ForbiddenError, InviteError, NotFoundError, SmallGroupError } from "./errors";
+import {
+  ForbiddenError,
+  InviteError,
+  NotFoundError,
+  PasskeyCancelledError,
+  PasskeyNotFoundError,
+  PasskeyUnsupportedError,
+  PollClosingPassedError,
+  SmallGroupError,
+} from "./errors";
 import type {
+  ActiveInvite,
   CurrentUser,
   Group,
   GroupRole,
@@ -83,6 +104,54 @@ const singleOptions = (labels: string[]): PollOption[] => labels.map((label, val
 // ---------------------------------------------------------------------------
 
 const me: CurrentUser = { userId: "user_ana", displayName: "Ana Reyes" };
+/** Roster rows that are the viewer (renamed by updateDisplayName, dropped by leaveGroup). */
+const viewerMemberIds = new Set<string>();
+
+// ---------------------------------------------------------------------------
+// Session (P1) and dev failure triggers
+// ---------------------------------------------------------------------------
+
+/** localStorage flag: present = signed out. Survives reloads so /signin can be exercised. */
+export const MOCK_SESSION_KEY = "lihim:mock:signed-out:v1";
+const PASSKEY_PROMPT_MS = 900;
+
+function isSignedOut(): boolean {
+  try {
+    return typeof localStorage !== "undefined" && localStorage.getItem(MOCK_SESSION_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function setSignedOut(out: boolean) {
+  try {
+    if (out) localStorage.setItem(MOCK_SESSION_KEY, "1");
+    else localStorage.removeItem(MOCK_SESSION_KEY);
+  } catch {
+    // Storage blocked: the session simply can't be ended across reloads in mock mode.
+  }
+}
+
+type MockFailure = "cancelled" | "no-passkey" | "unsupported" | "poll";
+
+/** `?mockFail=<kind>` on the current page URL (dev aid; see the header). */
+function mockFailure(): MockFailure | null {
+  if (typeof window === "undefined") return null;
+  const v = new URLSearchParams(window.location.search).get("mockFail");
+  return v === "cancelled" || v === "no-passkey" || v === "unsupported" || v === "poll" ? v : null;
+}
+
+/** The simulated passkey prompt shared by signIn/signUp. */
+async function mockPasskeyPrompt() {
+  if (typeof window !== "undefined" && typeof window.PublicKeyCredential !== "function") {
+    throw new PasskeyUnsupportedError();
+  }
+  await delay(PASSKEY_PROMPT_MS);
+  const fail = mockFailure();
+  if (fail === "cancelled") throw new PasskeyCancelledError();
+  if (fail === "no-passkey") throw new PasskeyNotFoundError();
+  if (fail === "unsupported") throw new PasskeyUnsupportedError();
+}
 
 /** Fixed demo group ids (uuids, like groups.id). Linked from /dev/components and COMPONENTS.md. */
 export const MOCK_GROUP_IDS = {
@@ -101,11 +170,12 @@ interface GroupRecord extends Omit<Group, "role"> {
 const FIRST = ["Ana", "Paolo", "Bea", "Miguel", "Kat", "Jerome", "Trish", "Carlo", "Mika", "Joaquin", "Leah", "Renz", "Sam", "Nico", "Gab", "Ella", "Andrei", "Pia", "Marco", "Jas", "Yna", "Kiko", "Rina", "Lance", "Bianca", "Josh", "Celine", "Enzo", "Hannah", "Rafa", "Dani", "Vince", "Aly", "Migs", "Toni"];
 const LAST = ["Reyes", "Santos", "Cruz", "Bautista", "Garcia", "Mendoza", "Torres", "Villanueva", "Ramos", "Aquino", "Navarro", "Castillo", "Dela Cruz", "Gonzales", "Flores", "Lim", "Tan", "Soriano", "Pascual", "Domingo"];
 
-function makeRoster(seed: number, size: number, adminName: string, startDaysAgo: number): Member[] {
+function makeRoster(seed: number, size: number, adminName: string, startDaysAgo: number, adminIsViewer = false): Member[] {
   const rand = mulberry32(seed);
   const roster: Member[] = [
     { id: nextId("mem"), displayName: adminName, joinedAt: at(-startDaysAgo * DAY), status: "active", isAdmin: true },
   ];
+  if (adminIsViewer) viewerMemberIds.add(roster[0]!.id);
   for (let i = 1; i < size; i++) {
     const first = FIRST[Math.floor(rand() * FIRST.length)]!;
     const last = LAST[Math.floor(rand() * LAST.length)]!;
@@ -136,7 +206,7 @@ addGroup({
   createdByName: "Ana Reyes",
   adminUserId: me.userId,
   memberUserIds: new Set([me.userId]),
-  roster: makeRoster(11, 31, "Ana Reyes", 120),
+  roster: makeRoster(11, 31, "Ana Reyes", 120, true),
 });
 
 addGroup({
@@ -162,8 +232,16 @@ addGroup({
   createdByName: "Ana Reyes",
   adminUserId: me.userId,
   memberUserIds: new Set([me.userId]),
-  roster: makeRoster(37, 6, "Ana Reyes", 9),
+  roster: makeRoster(37, 6, "Ana Reyes", 9, true),
 });
+
+// Two people the admin already removed from UP Sining (L4 "Removed (2)").
+// memberCount stays 31: it was computed before, and removal is off-chain only (D5).
+for (const m of groups.get(MOCK_GROUP_IDS.upsining)!.roster.filter((x) => !x.isAdmin).slice(-2)) m.status = "removed";
+
+/** Joins waiting for the admin's add_members run, per group (L4 "Adding 3 new members…"). */
+const pendingJoins = new Map<string, number>([[MOCK_GROUP_IDS.upsining, 3]]);
+const ADD_MEMBERS_MS = 2500;
 
 interface PollRecord extends Poll {
   /** Mock-only: the public record (nullifier + choice). Never tied to a member. */
@@ -187,15 +265,48 @@ function seedLedger(seed: number, counts: Record<number, number>) {
   return entries;
 }
 
-function addPoll(p: Omit<PollRecord, "votersCount" | "chainPollId" | "frozenRoot"> & { seed: number }) {
-  const { seed, ...rest } = p;
+function addPoll(
+  p: Omit<PollRecord, "votersCount" | "chainPollId" | "frozenRoot" | "openState"> & {
+    seed: number;
+    openState?: PollRecord["openState"];
+  },
+) {
+  const { seed, openState, ...rest } = p;
   const chainPollId = rest.status === "draft" ? null : String(++chainPollSeq);
   polls.set(rest.id, {
     ...rest,
     chainPollId,
+    openState: rest.status === "draft" ? (openState ?? "pending") : null,
     frozenRoot: rest.status === "draft" ? null : hex32(mulberry32(seed * 7)),
     votersCount: rest.ledger.length,
   });
+}
+
+/** How long a mock create transaction takes to "land" (P6 Opening… → open). */
+const OPEN_DELAY_MS = 4000;
+
+/** The create tx landed: the poll opens and freezes the current member set. */
+function openNow(p: PollRecord) {
+  const g = groups.get(p.groupId)!;
+  p.status = "open";
+  p.openState = null;
+  p.chainPollId = String(++chainPollSeq);
+  p.frozenRoot = hex32(mulberry32(seedOf(p.id) * 7));
+  p.frozenSize = g.memberCount;
+  p.opensAt = new Date().toISOString();
+}
+
+/** Simulates sending the create tx: pending now, open after OPEN_DELAY_MS (or failed with ?mockFail=poll). */
+function sendCreateTx(p: PollRecord): boolean {
+  if (mockFailure() === "poll") {
+    p.openState = "failed";
+    return false;
+  }
+  p.openState = "pending";
+  setTimeout(() => {
+    if (polls.get(p.id) === p && p.status === "draft") openNow(p);
+  }, OPEN_DELAY_MS);
+  return true;
 }
 
 addPoll({
@@ -258,15 +369,34 @@ addPoll({
   ledger: seedLedger(104, { 0: 11, 1: 7, 2: 3, 3: 4 }),
 });
 
+// P6: a create tx that didn't land ("Didn't open · Try again"). Always failed in the seed.
 addPoll({
   id: "poll_draft",
   seed: 105,
+  openState: "failed",
   groupId: MOCK_GROUP_IDS.upsining,
   title: "Officer evaluation: Treasurer",
   kind: "rating",
   options: RATING_OPTIONS,
   opensAt: at(1 * DAY),
   closesAt: at(4 * DAY),
+  hideLiveTally: true,
+  frozenSize: 0,
+  status: "draft",
+  ledger: [],
+});
+
+// P6: a create tx still in flight ("Opening…"). Stays pending in the demo so the state is visible.
+addPoll({
+  id: "poll_opening",
+  seed: 106,
+  openState: "pending",
+  groupId: MOCK_GROUP_IDS.upsining,
+  title: "Magkano ang per head sa Christmas party?",
+  kind: "single",
+  options: singleOptions(["₱300", "₱500", "₱800"]),
+  opensAt: at(0),
+  closesAt: at(3 * DAY),
   hideLiveTally: true,
   frozenSize: 0,
   status: "draft",
@@ -288,20 +418,21 @@ addPoll({
   ledger: seedLedger(201, { 0: 14, 1: 19 }),
 });
 
+/** `valid: false` = expired, used up or turned off (P3 revokeInvite). */
 const invites = new Map<string, Invite & { valid: boolean }>();
-function addInvite(token: string, groupId: string, valid: boolean) {
+function addInvite(token: string, groupId: string, valid: boolean, maxUses: number | null = null, uses = 3) {
   invites.set(token, {
     id: nextId("inv"),
     groupId,
     token,
     url: `/join/${token}`,
-    maxUses: null,
-    uses: valid ? 3 : 50,
+    maxUses,
+    uses: valid ? uses : 50,
     expiresAt: valid ? at(7 * DAY) : at(-1 * DAY),
     valid,
   });
 }
-addInvite("sining-2026", MOCK_GROUP_IDS.upsining, true);
+addInvite("sining-2026", MOCK_GROUP_IDS.upsining, true, 50, 12);
 addInvite("hoa-phase2", MOCK_GROUP_IDS.hoa, true);
 addInvite("expired-demo", MOCK_GROUP_IDS.upsining, false);
 
@@ -363,8 +494,31 @@ function requireAdmin(groupId: string): GroupRecord {
   return g;
 }
 
+function inviteWorks(inv: Invite & { valid: boolean }): boolean {
+  if (!inv.valid) return false;
+  if (inv.expiresAt && Date.parse(inv.expiresAt) <= Date.now()) return false;
+  return inv.maxUses === null || inv.uses < inv.maxUses;
+}
+
+function requireAdminPoll(pollId: string): PollRecord {
+  const p = polls.get(pollId);
+  if (!p) throw new NotFoundError("Poll not found");
+  requireAdmin(p.groupId);
+  return p;
+}
+
 function syncCount(g: GroupRecord) {
   g.memberCount = g.roster.filter((m) => m.status === "active").length;
+}
+
+function rename(displayName: string) {
+  const name = displayName.trim();
+  if (!name) throw new Error("Display name required");
+  for (const g of groups.values()) {
+    for (const m of g.roster) if (viewerMemberIds.has(m.id)) m.displayName = name;
+    if (g.adminUserId === me.userId) g.createdByName = name;
+  }
+  me.displayName = name;
 }
 
 // ---------------------------------------------------------------------------
@@ -424,6 +578,31 @@ function frozenCommitmentsOf(p: PollRecord, g: GroupRecord): Promise<bigint[]> {
 export const mockRepository: LihimRepository = {
   async getCurrentUser() {
     await delay(50);
+    return isSignedOut() ? null : clone(me);
+  },
+
+  async signIn() {
+    await mockPasskeyPrompt();
+    setSignedOut(false);
+    return clone(me);
+  },
+
+  async signUp(displayName) {
+    await mockPasskeyPrompt();
+    // Mock: a "new account" is still Ana with her demo groups, renamed, so every flow keeps working.
+    rename(displayName);
+    setSignedOut(false);
+    return clone(me);
+  },
+
+  async signOut() {
+    await delay(150);
+    setSignedOut(true);
+  },
+
+  async updateDisplayName(displayName) {
+    await delay(400);
+    rename(displayName);
     return clone(me);
   },
 
@@ -466,10 +645,12 @@ export const mockRepository: LihimRepository = {
     return toGroup(groups.get(id)!);
   },
 
-  async getMembers(groupId) {
+  async getMembers(groupId, options) {
     await delay();
     const g = requireAdmin(groupId);
-    return clone(g.roster.filter((m) => m.status === "active"));
+    const active = g.roster.filter((m) => m.status === "active");
+    const removed = options?.includeRemoved ? g.roster.filter((m) => m.status === "removed") : [];
+    return clone([...active, ...removed]);
   },
 
   async removeMember(groupId, memberId) {
@@ -483,10 +664,27 @@ export const mockRepository: LihimRepository = {
   },
 
   async addPendingMembers(groupId) {
-    await delay(200);
     requireAdmin(groupId);
-    // Mock joins land instantly (redeemInvite bumps memberCount), so nothing is ever queued.
-    return 0;
+    const n = pendingJoins.get(groupId) ?? 0;
+    // Like the real run: takes a few seconds when there's a queue, returns at once when there isn't.
+    await delay(n > 0 ? ADD_MEMBERS_MS : 200);
+    pendingJoins.set(groupId, 0);
+    return n;
+  },
+
+  async countPendingMembers(groupId) {
+    await delay(150);
+    requireAdmin(groupId);
+    return pendingJoins.get(groupId) ?? 0;
+  },
+
+  async leaveGroup(groupId) {
+    await delay(500);
+    const g = requireGroup(groupId);
+    if (g.adminUserId === me.userId) throw new ForbiddenError("The admin can't leave the group");
+    g.memberUserIds.delete(me.userId);
+    // Like the real flow (D5): the row goes, the on-chain member count stays.
+    g.roster = g.roster.filter((m) => !viewerMemberIds.has(m.id));
   },
 
   async createInvite(groupId, input) {
@@ -509,6 +707,24 @@ export const mockRepository: LihimRepository = {
     return clone(out);
   },
 
+  async getActiveInvite(groupId) {
+    await delay();
+    requireAdmin(groupId);
+    const inv = [...invites.values()].filter((i) => i.groupId === groupId && inviteWorks(i)).at(-1);
+    if (!inv) return null;
+    const { valid: _v, ...out } = inv;
+    const active: ActiveInvite = out;
+    return clone(active);
+  },
+
+  async revokeInvite(inviteId) {
+    await delay(400);
+    const inv = [...invites.values()].find((i) => i.id === inviteId);
+    if (!inv) throw new NotFoundError("Invite not found");
+    requireAdmin(inv.groupId);
+    inv.valid = false;
+  },
+
   async getInvitePreview(token) {
     await delay();
     const inv = invites.get(token);
@@ -523,7 +739,7 @@ export const mockRepository: LihimRepository = {
       memberCount: g.memberCount,
       createdByName: g.createdByName,
       expiresAt: inv.expiresAt,
-      valid: inv.valid,
+      valid: inviteWorks(inv),
       alreadyMember: isMember(g),
     };
     return preview;
@@ -532,12 +748,14 @@ export const mockRepository: LihimRepository = {
   async redeemInvite(token) {
     await delay(900);
     const inv = invites.get(token);
-    if (!inv || !inv.valid) throw new InviteError();
+    if (!inv || !inviteWorks(inv)) throw new InviteError();
     const g = groups.get(inv.groupId);
     if (!g) throw new InviteError();
     if (!isMember(g)) {
       g.memberUserIds.add(me.userId);
-      g.roster.push({ id: nextId("mem"), displayName: me.displayName, joinedAt: new Date().toISOString(), status: "active", isAdmin: false });
+      const row: Member = { id: nextId("mem"), displayName: me.displayName, joinedAt: new Date().toISOString(), status: "active", isAdmin: false };
+      viewerMemberIds.add(row.id);
+      g.roster.push(row);
       syncCount(g);
       inv.uses += 1;
     }
@@ -577,6 +795,7 @@ export const mockRepository: LihimRepository = {
     if (input.kind === "single" && options.length < 2) throw new Error("A single-choice poll needs at least 2 options");
     const id = nextId("poll");
     const seed = idSeq;
+    // P6: the poll starts as a draft whose create tx is in flight; it opens when the tx lands.
     addPoll({
       id,
       seed,
@@ -587,11 +806,30 @@ export const mockRepository: LihimRepository = {
       opensAt: new Date().toISOString(),
       closesAt: input.closesAt,
       hideLiveTally: input.hideLiveTally,
-      frozenSize: g.memberCount,
-      status: "open",
+      frozenSize: 0,
+      status: "draft",
       ledger: [],
     });
-    return toPoll(polls.get(id)!);
+    const p = polls.get(id)!;
+    if (!sendCreateTx(p)) throw new Error("Mock: create_poll not sent (?mockFail=poll)");
+    return toPoll(p);
+  },
+
+  async retryPoll(pollId) {
+    await delay(700);
+    const p = requireAdminPoll(pollId);
+    if (p.status !== "draft" || p.openState === "pending") return toPoll(p);
+    if (Date.parse(p.closesAt) <= Date.now()) throw new PollClosingPassedError();
+    if (!sendCreateTx(p)) throw new Error("Mock: create_poll not sent (?mockFail=poll)");
+    return toPoll(p);
+  },
+
+  async discardPoll(pollId) {
+    await delay(400);
+    const p = requireAdminPoll(pollId);
+    if (p.status !== "draft") throw new ForbiddenError("Only a poll that didn't open can be discarded");
+    if (p.openState === "pending") throw new ForbiddenError("The poll is still opening");
+    polls.delete(pollId);
   },
 
   async getFrozenCommitments(pollId) {
@@ -618,6 +856,8 @@ export const mockRepository: LihimRepository = {
       rows,
       average: hidden ? null : averageOf(p),
       leadingValues: rows ? leadingOf(rows) : [],
+      // The indexer runs every minute; pretend it last ran a little while ago.
+      updatedAt: p.status === "draft" ? null : new Date(Date.now() - 40_000).toISOString(),
     };
     return result;
   },

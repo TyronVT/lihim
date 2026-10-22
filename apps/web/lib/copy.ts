@@ -9,6 +9,8 @@
  *   in its footnote.
  * - Never nudge individuals: no "you haven't voted".
  * - Taglish welcome; English for anything legal.
+ *
+ * Strings from lihim-UIUX-SPEC.md are final unless marked "(draft copy)" next to them.
  */
 
 const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
@@ -72,7 +74,10 @@ export const copy = {
   },
 
   status: {
-    draft: "Draft",
+    /** P6: a "draft" is a poll whose create transaction is still in flight. Never say "Draft". */
+    draft: "Opening…",
+    /** P6: the create transaction failed (StatusPill status="didnt-open"). */
+    didntOpen: "Didn't open",
     open: "Open",
     closingSoon: "Closing soon",
     closed: "Closed",
@@ -90,7 +95,16 @@ export const copy = {
     invalid: "Hindi ma-record ang sagot na 'to. Refresh the page and try again.",
     notMember: "You weren't a member when this poll opened, so you can't answer it.",
     pollClosed: "This poll is closed.",
+    /** @deprecated One-tap answering (before P4). Use `pickThenSend`. */
     tapToAnswer: "Tap an answer. You can't change it after.",
+    /** P4: L6 instruction line. */
+    pickThenSend: "Pick an answer, then send. You can't change it after.",
+    /** P4: the pinned primary (compact) / button under the options (expanded). */
+    send: "Send answer",
+    /** X2 joined-after-open: the text link (no primary). */
+    backToGroup: "Back to group",
+    /** Expanded only, under the options (draft copy). */
+    keyboardHint: "Press 1–8 to pick an answer, then Enter to send.",
     ratingMin: "Hindi maganda",
     ratingMax: "Napakaganda",
     ratingAria: (n: number) => `${n} out of 5`,
@@ -125,6 +139,12 @@ export const copy = {
     hiddenNote: "Habang bukas ang poll, ang bilang lang ng sumagot ang makikita ng lahat — pati ng admin.",
     smallGroupBody:
       "In a group this small, people can sometimes work out who answered what by elimination — lalo na kung halos pareho ang sagot ng lahat.",
+    /** R15: shown instead of the verified badge while the poll is open. */
+    verifyAfterClose: "Anyone can check the count once it closes.",
+    /** Expanded rail, under the verified badge (draft copy; "public record" stays L9-only). */
+    verifyRailBody: "Anyone can recount every answer on the verify page. No names attached.",
+    /** UC14 freshness under turnout. Pass formatAgo(result.updatedAt): "Updated a minute ago". */
+    updated: (ago: string) => `Updated ${ago}`,
   },
 
   poll: {
@@ -153,6 +173,11 @@ export const copy = {
     noPollsBody: "When the admin opens a poll, it shows up here.",
     noPollsAdminBody: "Ask the group something. Answers stay anonymous.",
     openPollsCount: (n: number) => `${fmt(n)} open ${plural(n, "poll", "polls")}`,
+    /** Expanded page header context line on L3. */
+    adminContext: "You're the admin",
+    manageMembers: "Manage members",
+    about: "About",
+    minSize: (n: number) => `Minimum size ${fmt(n)}`,
   },
 
   /** L1. */
@@ -197,8 +222,10 @@ export const copy = {
     adminCaption: "Only you see names. Members see the count only.",
     memberCaption: (createdBy: string) => `Created by ${createdBy}`,
     adminActions: "Admin actions",
-    drafts: "Drafts",
-    draftMeta: "Not open yet — members can't see this",
+    /** @deprecated P6 — use copy.pollOpening.sectionTitle / .openingMeta. */
+    drafts: "Opening",
+    /** @deprecated P6 — use copy.pollOpening.openingMeta. */
+    draftMeta: "Usually under a minute.",
     noPastTitle: "Wala pang tapos na poll",
     noPastBody: "Results show up here once a poll closes.",
     newPollCta: "Ask the group",
@@ -224,6 +251,31 @@ export const copy = {
     shareText: (group: string) => `Join ${group} on Lihim — anonymous polls for the group.`,
     failed: "Hindi magawa ang link. Try again.",
     linkLabel: "Invite link",
+    /** P3: uses of the active link. `max` null = no limit. */
+    joined: (uses: number, max: number | null) =>
+      max === null ? `${fmt(uses)} joined` : `${fmt(uses)} of ${fmt(max)} joined`,
+    turnOff: "Turn off this link",
+    turnOffTitle: "Turn off this link?",
+    turnOffBody: "Anyone who has it won't be able to join. People already in the group stay in.", // (draft copy)
+    turnOffConfirm: "Turn off link",
+    turningOff: "Turning off…",
+    turnedOff: "Link turned off. Anyone who has it can't join.",
+    turnOffFailed: "Hindi ma-turn off ang link. Try again.",
+    makeNew: "Make a new link",
+    /** Supabase keeps only a hash of the link, so a link made on another device can't be shown (draft copy). */
+    madeElsewhere: "This link was made on another device, so it can't be shown here. Turn it off, or make a new one.",
+    none: "No working invite link right now.", // (draft copy)
+  },
+
+  /** L4 "Adding members" status row (R6, S6). */
+  addingMembers: {
+    running: (n: number) => `Adding ${fmt(n)} new ${plural(n, "member", "members")}…`,
+    runningBody: "They can answer polls you open after this.",
+    /** Toast. */
+    done: (n: number) => `${fmt(n)} ${plural(n, "member", "members")} added`,
+    failed: (n: number) => `Couldn't add ${fmt(n)} new ${plural(n, "member", "members")}.`,
+    failedBody: "They can't answer new polls yet.",
+    retry: "Try again",
   },
 
   /** L4. */
@@ -233,6 +285,15 @@ export const copy = {
     you: "You",
     options: (name: string) => `Options for ${name}`,
     filterLabel: "Find a member",
+    /** L4 collapsed section (X4). */
+    removedSection: (n: number) => `Removed (${fmt(n)})`,
+    activeCount: (n: number) => `${fmt(n)} active`,
+    colName: "Name",
+    colJoined: "Joined",
+    colRole: "Role",
+    colActions: "Actions",
+    roleMember: "Member",
+    removedOn: "Removed",
     filterPlaceholder: "Name",
     noMatch: "Walang tugma sa pangalang 'yan.",
     listLabel: "Member list",
@@ -280,6 +341,50 @@ export const copy = {
     opened: "Bukas na ang poll",
     failed: "Hindi mabuksan ang poll. Try again.",
     blockedInvite: "Invite link",
+    /** R7 review sheet (compact/medium). */
+    reviewTitle: "Check before opening",
+    reviewBody: "You can't edit a poll once it's open.",
+    reviewEdit: "Edit",
+    reviewWho: (n: number) => `${fmt(n)} ${plural(n, "member", "members")} can answer`,
+    reviewHidden: "Results hidden until it closes",
+    reviewLive: "Results show while it's open",
+    /** Expanded preview rail. */
+    previewTitle: "What members will see",
+    /** After "Open poll" (P6): goes to L3 with an Opening… row. */
+    openingToast: "Poll is opening. Members get an alert once it's live.",
+  },
+
+  /** P6 — L3 rows for polls whose create transaction is pending or failed (admin only). */
+  pollOpening: {
+    sectionTitle: "Opening",
+    opening: "Opening…",
+    openingMeta: "Usually under a minute.",
+    didntOpen: "Didn't open",
+    didntOpenMeta: "Members can't see it yet.", // (draft copy)
+    retry: "Try again",
+    retrying: "Trying again…",
+    retryFailed: "Hindi pa rin nabuksan. Try again in a moment.", // (draft copy)
+    closingPassed: "Lumipas na ang closing time nito. Discard it and make a new poll.", // (draft copy)
+    options: (title: string) => `Options for ${title}`,
+    discard: "Discard",
+    discardTitle: "Discard this poll?",
+    discardBody: "Members never saw it. You can make it again from New poll.", // (draft copy)
+    discardConfirm: "Discard poll",
+    discarding: "Discarding…",
+    discarded: "Poll discarded",
+  },
+
+  /** P3 — L3 overflow (members only). Same on-chain limitation as removal (D5): don't promise more. */
+  leaveGroup: {
+    menuItem: "Leave group",
+    title: (group: string) => `Leave ${group}?`,
+    body:
+      "You'll stop getting its polls. Answers you already gave stay counted and stay anonymous. " +
+      "To rejoin you'll need a new invite link.",
+    confirm: "Leave group",
+    leaving: "Leaving…",
+    left: (group: string) => `You left ${group}`,
+    failed: "Hindi ka maka-alis ngayon. Try again.", // (draft copy)
   },
 
   join: {
@@ -299,14 +404,96 @@ export const copy = {
     invalidBody: "Ask the group admin for a new link.",
     openGroup: "Open group",
     home: "Your groups",
+    /** X1 for a signed-out visitor (R11): secondary to L8. */
+    whatIsLihim: "What is Lihim?",
     joinedBody: "The admin sees that you joined. Nobody — not even the admin — sees what you answer.",
   },
 
   home: {
     title: "Your groups",
     emptyTitle: "Wala ka pang group",
-    emptyBody: "Open an invite link from your org, or start a group of your own.",
+    emptyBody: "Join with an invite link from your group admin, or start one.",
     switcherLabel: "Switch group",
+  },
+
+  /** P1 — L0 Sign in. */
+  signin: {
+    title: "Sign in",
+    cta: "Sign in with passkey",
+    waiting: "Waiting for your passkey…",
+    createAccount: "New here? Create an account",
+    /** Back from the new-account step to sign-in (draft copy). */
+    haveAccount: "Already have a passkey? Sign in",
+    nameLabel: "Your name",
+    nameHint: "Only admins of groups you join see this. It's never attached to your answers.",
+    nameRequired: "Enter your name.", // (draft copy)
+    continue: "Continue",
+    creating: "Creating your account…", // (draft copy)
+    cancelled: "Sign-in cancelled. Try again when you're ready.",
+    noPasskey:
+      "No Lihim passkey on this device. If you made one on another phone, use that phone's passkey sync, or create a new account.",
+    unsupported: "This browser can't keep your answers private yet. Try Chrome on Android or Safari on iPhone.",
+    failed: "Hindi ka ma-sign in ngayon. Check your connection and try again.", // (draft copy)
+    /** One line above the button when arriving with ?next=. */
+    nextPoll: "Sign in to open this poll.",
+    nextGroup: "Sign in to open this group.",
+    nextOther: "Sign in to continue.", // (draft copy)
+  },
+
+  /** P1/P2/P5 — L10 Settings. Never anything about which polls you answered. */
+  settings: {
+    title: "Settings",
+    nameTitle: "Your name",
+    nameLabel: "Your name",
+    nameHint: "Admins of your groups see this. It's never attached to your answers.",
+    nameSave: "Save",
+    nameSaving: "Saving…",
+    nameSaved: "Name saved",
+    nameFailed: "Hindi ma-save. Try again.", // (draft copy)
+    alertsTitle: "Alerts",
+    alertsSwitch: "Poll alerts",
+    alertsHelp: "New polls and polls about to close. Every member gets the same alerts.",
+    alertsBlocked:
+      "Your browser is blocking alerts from Lihim. To turn them on, allow notifications for this site in your browser settings, then come back here.", // (draft copy)
+    alertsUnsupported: "This browser can't show alerts. On iPhone, add Lihim to your Home Screen first.", // (draft copy)
+    displayTitle: "Display",
+    privacyTitle: "Privacy",
+    accountTitle: "Account",
+    signedInAs: (name: string) => `Signed in as ${name}`,
+    signOut: "Sign out",
+    signingOut: "Signing out…",
+    signOutBody: "Your passkey stays on your device. Sign in again with it any time.",
+  },
+
+  /** P2 — L2 success card (once per device) and toasts. */
+  alerts: {
+    askTitle: "Get a heads-up when a poll opens or is about to close?",
+    askBody: "Every member gets the same alerts.", // (draft copy)
+    turnOn: "Turn on alerts",
+    notNow: "Not now",
+    turnedOn: "Alerts on",
+    blocked: "Alerts are blocked in this browser. You can change that in Settings.", // (draft copy)
+  },
+
+  /** Desktop shells (lihim-UIUX-SPEC.md §3) and the mobile footer row (R14). */
+  shell: {
+    skipToContent: "Skip to content",
+    sidebarLabel: "Lihim",
+    homeLink: "Lihim — your groups",
+    yourGroups: "Your groups",
+    newGroup: "New group",
+    privacy: "Who can see what",
+    settings: "Settings",
+    signIn: "Sign in",
+    groupsHome: "Your groups",
+    signedInAs: (name: string) => `Signed in as ${name}`,
+    openPollsBadge: (n: number) => `${fmt(n)} open ${plural(n, "poll", "polls")}`,
+    groupsFailed: "Hindi ma-load ang groups.",
+    noGroups: "Wala ka pang group.",
+    /** Visually hidden label for the footer links landmark. */
+    footerLabel: "More",
+    /** Accessible name of a Screen's right rail. */
+    railLabel: "Details",
   },
 
   reminders: {
@@ -352,6 +539,16 @@ export const copy = {
     answerUnknown: "Not an option",
     recordRef: (pollId: string) => `Poll #${pollId} on the record`,
     footnoteLink: "See it on Stellar",
+    /** R8: one line under the title, for someone opening a shared link cold. */
+    intro: "This page recounts a Lihim poll from the public record. It shows every answer, never who gave it.",
+    recounting: "Recounting from the public record…",
+    mismatchTitle: "The recount doesn't match what Lihim shows. Tell the group admin.",
+    mismatchShown: "Lihim shows", // (draft copy)
+    mismatchRecount: "Recount", // (draft copy)
+    stillOpen: (when: string) => `This poll is still open. The full record appears when it closes on ${when}.`,
+    notFound: "No poll with this link. Check the link you were sent.",
+    unreachable: "Can't reach the public record right now. Try again in a minute.",
+    retry: "Try again",
   },
 
   /**

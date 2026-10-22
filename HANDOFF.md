@@ -1,5 +1,7 @@
 # Handoff — scaffold status (2026-10-22)
 
+> **Newer:** UI/UX + desktop build on branch `uiux-desktop` — see `HANDOFF-UIUX.md`.
+
 Scaffold of the Lihim monorepo; web ↔ SDK ↔ Supabase integration done, not yet on testnet. Read `lihim-SPEC.md`,
 `lihim-DESIGN.md` and `contracts/INTERFACE.md` (canonical cross-package interface) first.
 

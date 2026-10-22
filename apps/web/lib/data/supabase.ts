@@ -7,15 +7,23 @@
  * Privacy (lihim-SPEC.md → "Never stored anywhere in Supabase"): the only identity material that
  * leaves the browser is a member's commitment (submit_commitment, unlinked by design) and the
  * admin's PUBLIC key. prf_out, identity secrets and admin private keys stay in lib/identity.ts.
+ *
+ * Sign in / sign up (P1) run the passkey ceremony in lib/passkey.ts against the `auth-passkey`
+ * Edge Function; the PRF output from the same prompt goes to lib/identity.ts (setPrfOutput).
+ * TODO(passkey): after a full reload the session is restored by supabase-js but prf_out is gone
+ * (memory only) — identity.getPrfOutput still needs to re-prompt for the passkey in production.
  */
 import { createClient, type PostgrestError, type SupabaseClient } from "@supabase/supabase-js";
 import type { AdminTxBody, LihimNetwork } from "@lihim/sdk";
 import { env } from "../env";
 import { toHex32 } from "../format";
 import { groupAdminKey, groupIdentity, loadSdk, setPrfOutput } from "../identity";
+import { passkeySignIn, passkeySignUp, type PasskeyResult } from "../passkey";
 import type { LihimRepository } from "./index";
-import { ForbiddenError, InviteError, NotFoundError, SmallGroupError } from "./errors";
+import { ForbiddenError, InviteError, NotFoundError, PollClosingPassedError, SmallGroupError } from "./errors";
 import type {
+  ActiveInvite,
+  CurrentUser,
   Group,
   GroupRole,
   Invite,
@@ -23,6 +31,7 @@ import type {
   Poll,
   PollAudit,
   PollKind,
+  PollOpenState,
   PollOption,
   PollResult,
   PollResultRow,
@@ -142,7 +151,8 @@ function toGroup(g: GroupRow, viewer: string, adminName: string): Group {
   };
 }
 
-function toPoll(p: PollRow): Poll {
+/** `openStates` comes from poll_open_states (admin only); drafts without an entry read as pending. */
+function toPoll(p: PollRow, openStates?: Map<string, PollOpenState>): Poll {
   return {
     id: p.id,
     chainPollId: str(p.chain_poll_id),
@@ -156,9 +166,58 @@ function toPoll(p: PollRow): Poll {
     votersCount: p.voters_count,
     frozenSize: p.frozen_size ?? 0,
     status: p.status,
+    openState: p.status === "draft" ? (openStates?.get(p.id) ?? "pending") : null,
     frozenRoot: p.frozen_root ? toHex32(p.frozen_root) : null,
   };
 }
+
+/**
+ * P6: pending vs failed for a group's drafts. pending_txs is service-role only, so the
+ * poll_open_states RPC derives it (admin only; see the lifecycle migration).
+ */
+async function openStatesOf(groupId: string): Promise<Map<string, PollOpenState>> {
+  const { data, error } = await db().rpc("poll_open_states", { group_id: groupId });
+  if (error) throw new Error(error.message);
+  return new Map(((data ?? []) as { poll_id: string; open_state: PollOpenState }[]).map((r) => [r.poll_id, r.open_state]));
+}
+
+// ---------------------------------------------------------------------------
+// Session + invite links remembered on this device
+// ---------------------------------------------------------------------------
+
+async function startSession({ session, prfOutput }: PasskeyResult): Promise<CurrentUser> {
+  const { error } = await db().auth.setSession({ access_token: session.access_token, refresh_token: session.refresh_token });
+  if (error) throw new Error(error.message);
+  setPrfOutput(prfOutput);
+  const user = await supabaseRepository.getCurrentUser();
+  if (!user) throw new Error("Signed in, but no session was stored");
+  return user;
+}
+
+/**
+ * The DB keeps only token_hash, so the raw link an admin made is remembered on that device
+ * (invite id → token) for the invite sheet's "Copy link". Their own link; nothing about votes.
+ */
+const INVITE_TOKENS_KEY = "lihim:invite-tokens:v1";
+
+function readInviteTokens(): Record<string, string> {
+  try {
+    return JSON.parse(localStorage.getItem(INVITE_TOKENS_KEY) ?? "{}") as Record<string, string>;
+  } catch {
+    return {};
+  }
+}
+
+function rememberInviteToken(inviteId: string, token: string) {
+  try {
+    localStorage.setItem(INVITE_TOKENS_KEY, JSON.stringify({ ...readInviteTokens(), [inviteId]: token }));
+  } catch {
+    // Storage blocked: the link just can't be shown again later on this device.
+  }
+}
+
+/** invites.max_uses is NOT NULL; createInvite stores this for "no limit". */
+const NO_LIMIT_USES = 10_000;
 
 function leadingOf(rows: PollResultRow[]): number[] {
   const max = Math.max(0, ...rows.map((r) => r.count));
@@ -253,6 +312,31 @@ export const supabaseRepository: LihimRepository = {
     return { userId: user.id, displayName: (profile.data?.display_name as string | undefined) ?? "" };
   },
 
+  async signIn() {
+    return startSession(await passkeySignIn());
+  },
+
+  async signUp(displayName) {
+    const name = displayName.trim();
+    if (!name) throw new Error("Display name required");
+    return startSession(await passkeySignUp(name));
+  },
+
+  async signOut() {
+    await db().auth.signOut();
+    // onAuthStateChange clears it too; do it here so it can't be missed.
+    setPrfOutput(null);
+  },
+
+  async updateDisplayName(displayName) {
+    await uid();
+    const { error } = await db().rpc("update_display_name", { display_name: displayName.trim() });
+    if (error) throw new Error(error.message);
+    const user = await this.getCurrentUser();
+    if (!user) throw new ForbiddenError("Sign in first");
+    return user;
+  },
+
   async listMyGroups() {
     const viewer = await uid();
     const groups = rowsOf(await db().from("groups").select(GROUP_COLS).returns<GroupRow[]>());
@@ -331,19 +415,19 @@ export const supabaseRepository: LihimRepository = {
     };
   },
 
-  async getMembers(groupId) {
+  async getMembers(groupId, options) {
     const g = await groupRow(groupId);
     if (!g) throw new NotFoundError("Group not found");
     if (g.admin_user_id !== (await uid())) throw new ForbiddenError();
+    let query = db().from("group_members").select("user_id, display_name, joined_at, status").eq("group_id", groupId);
+    if (!options?.includeRemoved) query = query.eq("status", "active");
     const rows = rowsOf(
-      await db()
-        .from("group_members")
-        .select("user_id, display_name, joined_at, status")
-        .eq("group_id", groupId)
-        .eq("status", "active")
+      await query
         .order("joined_at")
         .returns<{ user_id: string; display_name: string; joined_at: string; status: Member["status"] }[]>(),
     );
+    // Active first (admin on top), then removed.
+    const rank = (m: Member) => (m.status === "removed" ? 2 : m.isAdmin ? 0 : 1);
     return rows
       .map((m) => ({
         id: m.user_id,
@@ -352,7 +436,7 @@ export const supabaseRepository: LihimRepository = {
         status: m.status,
         isAdmin: m.user_id === g.admin_user_id,
       }))
-      .sort((a, b) => Number(b.isAdmin) - Number(a.isAdmin));
+      .sort((a, b) => rank(a) - rank(b));
   },
 
   async removeMember(groupId, memberId) {
@@ -400,12 +484,33 @@ export const supabaseRepository: LihimRepository = {
     return commitments.length;
   },
 
+  async countPendingMembers(groupId) {
+    const g = await groupRow(groupId);
+    if (!g) throw new NotFoundError("Group not found");
+    if (g.admin_user_id !== (await uid())) throw new ForbiddenError();
+    const { count, error } = await db()
+      .from("pending_commitments")
+      .select("id", { count: "exact", head: true })
+      .eq("group_id", groupId);
+    if (error) throw new Error(error.message);
+    return count ?? 0;
+  },
+
+  async leaveGroup(groupId) {
+    // Off-chain, like removeMember (D5): see leave_group in the lifecycle migration.
+    const { error } = await db().rpc("leave_group", { group_id: groupId });
+    if (!error) return;
+    if (error.message.includes("admin_cannot_leave")) throw new ForbiddenError("The admin can't leave the group");
+    if (error.message.includes("not_a_member")) throw new NotFoundError("Group not found");
+    throw new Error(error.message);
+  },
+
   async createInvite(groupId, input) {
     await requireAdmin(groupId);
     const token = randomToken();
     const hours = input?.expiresInHours === undefined ? 24 * 7 : input.expiresInHours;
     const expiresAt = hours === null ? null : new Date(Date.now() + hours * 3_600_000).toISOString();
-    const maxUses = input?.maxUses ?? 10_000;
+    const maxUses = input?.maxUses ?? NO_LIMIT_USES;
     const row = check(
       await db()
         .from("invites")
@@ -422,7 +527,42 @@ export const supabaseRepository: LihimRepository = {
       uses: 0,
       expiresAt,
     };
+    rememberInviteToken(invite.id, token);
     return invite;
+  },
+
+  async getActiveInvite(groupId) {
+    await requireAdmin(groupId);
+    const rows = rowsOf(
+      await db()
+        .from("invites")
+        .select("id, group_id, max_uses, uses, expires_at")
+        .eq("group_id", groupId)
+        .order("created_at", { ascending: false })
+        .returns<{ id: string; group_id: string; max_uses: number; uses: number; expires_at: string | null }[]>(),
+    );
+    const now = Date.now();
+    const row = rows.find((r) => r.uses < r.max_uses && (r.expires_at === null || Date.parse(r.expires_at) > now));
+    if (!row) return null;
+    const token = readInviteTokens()[row.id] ?? null;
+    const invite: ActiveInvite = {
+      id: row.id,
+      groupId: row.group_id,
+      token,
+      url: token ? `/join/${encodeURIComponent(token)}` : null,
+      maxUses: row.max_uses >= NO_LIMIT_USES ? null : row.max_uses,
+      uses: row.uses,
+      expiresAt: row.expires_at,
+    };
+    return invite;
+  },
+
+  async revokeInvite(inviteId) {
+    // "Turn off this link": expire it now. invite_preview/redeem_invite then report invite_expired.
+    const rows = rowsOf(
+      await db().from("invites").update({ expires_at: new Date().toISOString() }).eq("id", inviteId).select("id").returns<{ id: string }[]>(),
+    );
+    if (rows.length === 0) throw new NotFoundError("Invite not found");
   },
 
   async getInvitePreview(token) {
@@ -474,12 +614,15 @@ export const supabaseRepository: LihimRepository = {
     const rows = rowsOf(
       await db().from("polls").select(POLL_COLS).eq("group_id", groupId).order("created_at", { ascending: false }).returns<PollRow[]>(),
     );
-    return rows.map(toPoll);
+    // Only admins can read drafts (RLS), so only they ever trigger the open-state lookup.
+    const states = rows.some((r) => r.status === "draft") ? await openStatesOf(groupId) : undefined;
+    return rows.map((r) => toPoll(r, states));
   },
 
   async getPoll(pollId) {
     const row = check(await db().from("polls").select(POLL_COLS).eq("id", pollId).maybeSingle<PollRow>());
-    return row ? toPoll(row) : null;
+    if (!row) return null;
+    return toPoll(row, row.status === "draft" ? await openStatesOf(row.group_id) : undefined);
   },
 
   async createPoll(input) {
@@ -487,55 +630,48 @@ export const supabaseRepository: LihimRepository = {
     if (g.member_count < g.min_members) throw new SmallGroupError(g.member_count, g.min_members);
     const labels = optionLabelsFor(input.kind, input.optionLabels);
     if (input.kind === "single" && (labels?.length ?? 0) < 2) throw new Error("A single-choice poll needs at least 2 options");
-
-    const sdk = await loadSdk();
-    const admin = await groupAdminKey(input.groupId);
-    const polls = new sdk.LihimPollsClient(network());
-    const chainGroupId = BigInt(g.chain_group_id);
-    const title = input.title.trim();
-    const kind = input.kind === "single" ? { kind: "single" as const, options: labels!.length } : { kind: input.kind };
-    const closesAt = BigInt(Math.floor(Date.parse(input.closesAt) / 1000));
-    const metaHash = sdk.pollMetaHash(input.kind, title, labels);
-    // Same id on every retry, so a re-signed request updates the same draft row.
+    // Same id on every retry (and on retryPoll), so a re-signed request updates the same draft row.
     const pollId = crypto.randomUUID();
-
-    try {
-      await sendAdminTx(async () => {
-        const nonce = await polls.getNonce(chainGroupId);
-        const args = sdk.signedAdminArgs(
-          {
-            contractId: polls.contractId,
-            fnTag: "create_poll",
-            chainGroupId,
-            nonce,
-            args: sdk.adminArgs.create_poll(kind, closesAt, metaHash),
-            leadingArgs: [sdk.u64(chainGroupId)],
-          },
-          admin,
-        );
-        return {
-          action: "create_poll",
-          group_id: input.groupId,
-          args_xdr: await toBase64Xdr(args),
-          poll: {
-            id: pollId,
-            title,
-            kind: input.kind,
-            options: labels,
-            closes_at: new Date(Number(closesAt) * 1000).toISOString(),
-            hide_live_tally: input.hideLiveTally,
-          },
-        };
-      });
-    } catch (e) {
-      if (e instanceof sdk.AdminTxError && (e.code === "below_min_members" || e.contractErrorCode === 201)) {
-        throw new SmallGroupError(g.member_count, g.min_members);
-      }
-      throw e;
-    }
+    await sendCreatePoll(g, pollId, {
+      title: input.title.trim(),
+      kind: input.kind,
+      labels,
+      closesAt: input.closesAt,
+      hideLiveTally: input.hideLiveTally,
+    });
     const poll = await this.getPoll(pollId);
     if (!poll) throw new NotFoundError("Poll not found");
     return poll;
+  },
+
+  async retryPoll(pollId) {
+    const row = check(await db().from("polls").select(POLL_COLS).eq("id", pollId).maybeSingle<PollRow>());
+    if (!row) throw new NotFoundError("Poll not found");
+    const g = await requireAdmin(row.group_id);
+    if (row.status !== "draft") return toPoll(row);
+    if (Date.parse(row.closes_at) <= Date.now()) throw new PollClosingPassedError();
+    // Re-sign with the CURRENT nonce and resend under the same id; the draft row is rewritten.
+    await sendCreatePoll(g, row.id, {
+      title: row.title,
+      kind: row.kind,
+      labels: row.options,
+      closesAt: row.closes_at,
+      hideLiveTally: row.hide_live_tally,
+    });
+    const poll = await this.getPoll(pollId);
+    if (!poll) throw new NotFoundError("Poll not found");
+    return poll;
+  },
+
+  async discardPoll(pollId) {
+    const { error } = await db().rpc("discard_draft_poll", { poll_id: pollId });
+    if (!error) return;
+    if (error.message.includes("poll_not_found")) throw new NotFoundError("Poll not found");
+    if (error.message.includes("not_group_admin")) throw new ForbiddenError();
+    if (error.message.includes("poll_not_draft") || error.message.includes("poll_opening")) {
+      throw new ForbiddenError("Only a poll that didn't open can be discarded");
+    }
+    throw new Error(error.message);
   },
 
   async getFrozenCommitments(pollId) {
@@ -554,10 +690,16 @@ export const supabaseRepository: LihimRepository = {
     const hidden = poll.status !== "closed" && poll.hideLiveTally;
     let rows: PollResultRow[] | null = null;
     let average: number | null = null;
+    let updatedAt: string | null = null;
     if (!hidden) {
       const counts = rowsOf(
-        await db().from("poll_results").select("option_index, count").eq("poll_id", pollId).returns<{ option_index: number; count: number }[]>(),
+        await db()
+          .from("poll_results")
+          .select("option_index, count, updated_at")
+          .eq("poll_id", pollId)
+          .returns<{ option_index: number; count: number; updated_at: string }[]>(),
       );
+      updatedAt = counts.reduce<string | null>((max, c) => (max === null || c.updated_at > max ? c.updated_at : max), null);
       const byValue = new Map(counts.map((c) => [c.option_index, c.count]));
       rows = poll.options.map((o) => ({ ...o, count: byValue.get(o.value) ?? 0 }));
       const total = rows.reduce((s, r) => s + r.count, 0);
@@ -572,6 +714,7 @@ export const supabaseRepository: LihimRepository = {
       rows,
       average,
       leadingValues: rows ? leadingOf(rows) : [],
+      updatedAt,
     };
     return result;
   },
@@ -617,6 +760,60 @@ export const supabaseRepository: LihimRepository = {
     return audit;
   },
 };
+
+/**
+ * Sign `create_poll` with the current nonce and send it under `pollId` (createPoll and retryPoll).
+ * submit-admin-tx writes/rewrites the draft row before sending, so a failure leaves a draft that
+ * poll_open_states reports as failed (P6).
+ */
+async function sendCreatePoll(
+  g: GroupRow & { chain_group_id: number | string },
+  pollId: string,
+  p: { title: string; kind: PollKind; labels: string[] | null; closesAt: string; hideLiveTally: boolean },
+): Promise<void> {
+  const sdk = await loadSdk();
+  const admin = await groupAdminKey(g.id);
+  const polls = new sdk.LihimPollsClient(network());
+  const chainGroupId = BigInt(g.chain_group_id);
+  const kind = p.kind === "single" ? { kind: "single" as const, options: p.labels?.length ?? 0 } : { kind: p.kind };
+  const closesAt = BigInt(Math.floor(Date.parse(p.closesAt) / 1000));
+  const metaHash = sdk.pollMetaHash(p.kind, p.title, p.labels);
+
+  try {
+    await sendAdminTx(async () => {
+      const nonce = await polls.getNonce(chainGroupId);
+      const args = sdk.signedAdminArgs(
+        {
+          contractId: polls.contractId,
+          fnTag: "create_poll",
+          chainGroupId,
+          nonce,
+          args: sdk.adminArgs.create_poll(kind, closesAt, metaHash),
+          leadingArgs: [sdk.u64(chainGroupId)],
+        },
+        admin,
+      );
+      return {
+        action: "create_poll",
+        group_id: g.id,
+        args_xdr: await toBase64Xdr(args),
+        poll: {
+          id: pollId,
+          title: p.title,
+          kind: p.kind,
+          options: p.labels,
+          closes_at: new Date(Number(closesAt) * 1000).toISOString(),
+          hide_live_tally: p.hideLiveTally,
+        },
+      };
+    });
+  } catch (e) {
+    if (e instanceof sdk.AdminTxError && (e.code === "below_min_members" || e.contractErrorCode === 201)) {
+      throw new SmallGroupError(g.member_count, g.min_members);
+    }
+    throw e;
+  }
+}
 
 /**
  * Queue the viewer's commitment for this group unless it is already on-chain or queued. The

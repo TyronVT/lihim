@@ -9,7 +9,11 @@ import {
   Button,
   Card,
   ConfirmSheet,
+  CountBadge,
+  DataTable,
   EmptyState,
+  FocusedTopBar,
+  FooterLinks,
   HashChip,
   Icon,
   Icons,
@@ -22,15 +26,18 @@ import {
   OptionRow,
   OverflowMenu,
   PageHeader,
+  REVEAL_ON_ROW_HOVER,
   RatingRow,
   ResultBar,
   Screen,
   Section,
   SegmentedControl,
   Sheet,
+  ShellHeader,
   SkeletonList,
   SmallGroupWarning,
   StatusPill,
+  StatusRow,
   Stepper,
   Switch,
   TextArea,
@@ -42,13 +49,14 @@ import {
   Wordmark,
   notify,
   type AnswerPhase,
+  type DataTableColumn,
   type IconName,
   type VoteStatusPhase,
 } from "@/components";
 import { copy } from "@/lib/copy";
 import { MOCK_GROUP_IDS, RATING_OPTIONS, YES_NO_OPTIONS } from "@/lib/data/mock";
 import type { PollOption } from "@/lib/data/types";
-import { formatClosing } from "@/lib/format";
+import { formatClosing, formatShortDate } from "@/lib/format";
 import { castVote } from "@/lib/vote";
 
 const SAMPLE_OPTIONS: PollOption[] = ["Tagaytay", "Baguio", "La Union", "Sa campus na lang"].map((label, value) => ({ value, label }));
@@ -56,6 +64,47 @@ const SAMPLE_HASH = "0x1a7f3a9c210b44e8d5c6f0a1b2c3d4e5f60718293a4b5c6d7e8f90a1b
 // Fixed instant: render must be pure and server/client output must match.
 const NOW = Date.parse("2026-10-22T02:00:00Z");
 const DEMO_POLL = { id: "dev_poll", groupId: "dev_group", chainPollId: "999", frozenRoot: SAMPLE_HASH };
+
+interface DemoMember {
+  id: string;
+  name: string;
+  joined: number;
+  admin?: boolean;
+}
+
+const DEMO_MEMBERS: DemoMember[] = [
+  { id: "m1", name: "Ana Reyes", joined: NOW - 120 * 86_400_000, admin: true },
+  { id: "m2", name: "Ella Dela Cruz", joined: NOW - 119 * 86_400_000 },
+  { id: "m3", name: "Paolo Santos", joined: NOW - 40 * 86_400_000 },
+  { id: "m4", name: "Bea Garcia", joined: NOW - 3 * 86_400_000 },
+];
+
+const MEMBER_COLUMNS: DataTableColumn<DemoMember>[] = [
+  { key: "name", header: copy.roster.colName, cell: (m) => m.name, sortValue: (m) => m.name, width: "45%" },
+  { key: "joined", header: copy.roster.colJoined, cell: (m) => formatShortDate(m.joined), sortValue: (m) => m.joined },
+  { key: "role", header: copy.roster.colRole, cell: (m) => (m.admin ? copy.roster.adminTag : copy.roster.roleMember) },
+  {
+    key: "actions",
+    header: copy.roster.colActions,
+    headerHidden: true,
+    align: "end",
+    width: "4rem",
+    cell: (m) =>
+      m.admin ? null : (
+        <OverflowMenu
+          label={copy.roster.options(m.name)}
+          className={REVEAL_ON_ROW_HOVER}
+          items={[{ label: copy.members.remove, icon: UserMinus, onSelect: () => {}, destructive: true }]}
+        />
+      ),
+  },
+];
+
+const RECEIPTS = Array.from({ length: 24 }, (_, i) => ({
+  n: i + 1,
+  hash: `0x${(i * 2654435761 >>> 0).toString(16).padStart(8, "0")}${SAMPLE_HASH.slice(10)}`,
+  answer: i % 3 === 0 ? "No" : "Yes",
+}));
 
 function Block({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -282,7 +331,15 @@ export function Showcase() {
             <ResultBar label="Yes" count={17} total={23} leading />
             <ResultBar label="No" count={6} total={23} />
             <TurnoutMeter answered={23} total={31} />
-            <VerifiedBadge pollId="poll_finance" />
+            <VerifiedBadge pollId="poll_finance" status="closed" />
+          </Card>
+          <Card className="flex flex-col gap-3">
+            <Label>verified badge while open (R15)</Label>
+            <VerifiedBadge
+              pollId="poll_retreat"
+              status="open"
+              whileOpen={<p className="text-caption text-text-2">{copy.results.verifyAfterClose}</p>}
+            />
           </Card>
           <Card className="flex flex-col gap-3">
             <p className="text-body text-text-2">{copy.results.hiddenUntil("6:00 PM")}</p>
@@ -299,6 +356,7 @@ export function Showcase() {
         <Block title="Status pills">
           <div className="flex flex-wrap gap-2">
             <StatusPill status="draft" />
+            <StatusPill status="didnt-open" />
             <StatusPill status="open" />
             <StatusPill status="closing-soon" />
             <StatusPill status="closed" />
@@ -342,6 +400,25 @@ export function Showcase() {
             meta={formatClosing(NOW + 2 * 86_400_000, NOW)}
             trailing={<StatusPill status="open" />}
           />
+          <Label>R10 poll card: pill in the meta row, title full width</Label>
+          <ListRow
+            href="/p/poll_ga_rating"
+            title="Rate the GA last Friday"
+            status={<StatusPill status="closing-soon" />}
+            meta={<span className="tabular">{formatClosing(NOW + 5 * 3_600_000, NOW)} · 16 of 31 answered</span>}
+            trailing={null}
+          />
+          <ListRow
+            href={`/g/${MOCK_GROUP_IDS.upsining}`}
+            title="UP Sining"
+            meta={copy.members.count(31)}
+            trailing={
+              <span className="flex shrink-0 items-center gap-2">
+                <CountBadge count={2} label={copy.shell.openPollsBadge(2)} />
+                <span className="text-caption text-text-3">{copy.group.adminTag}</span>
+              </span>
+            }
+          />
           <ListRow
             title="Paolo Santos"
             meta="Joined Oct 2, 2026"
@@ -353,6 +430,81 @@ export function Showcase() {
             }
           />
           <SkeletonList count={2} />
+        </Block>
+
+        <Block title="Status rows (L3 Opening, L4 Adding members)">
+          <StatusRow state="running" title={copy.pollOpening.opening} body={copy.pollOpening.openingMeta} />
+          <StatusRow state="running" title={copy.addingMembers.running(3)} body={copy.addingMembers.runningBody} />
+          <StatusRow state="done" title={copy.addingMembers.done(3)} />
+          <StatusRow
+            state="failed"
+            title={copy.pollOpening.didntOpen}
+            body="Officer evaluation: Treasurer"
+            action={
+              <Button variant="secondary" block={false}>
+                {copy.pollOpening.retry}
+              </Button>
+            }
+            trailing={
+              <OverflowMenu
+                label={copy.pollOpening.options("Officer evaluation: Treasurer")}
+                items={[{ label: copy.pollOpening.discard, onSelect: () => {}, destructive: true }]}
+              />
+            }
+          />
+          <StatusRow
+            state="failed"
+            title={copy.addingMembers.failed(3)}
+            body={copy.addingMembers.failedBody}
+            action={
+              <Button variant="secondary" block={false}>
+                {copy.addingMembers.retry}
+              </Button>
+            }
+          />
+        </Block>
+
+        <Block title="Data table (L4 roster, L9 answers at ≥ lg)">
+          <DataTable
+            caption={copy.roster.listLabel}
+            columns={MEMBER_COLUMNS}
+            rows={DEMO_MEMBERS}
+            rowKey={(m) => m.id}
+            defaultSort={{ key: "name", direction: "ascending" }}
+          />
+          <DataTable
+            caption={copy.verify.tableCaption}
+            captionVisible
+            mono
+            maxHeight="20rem"
+            rows={RECEIPTS}
+            rowKey={(r) => String(r.n)}
+            columns={[
+              { key: "n", header: copy.verify.colIndex, cell: (r) => r.n, width: "3rem" },
+              { key: "receipt", header: copy.verify.colReceipt, cell: (r) => <HashChip value={r.hash} label={copy.verify.colReceipt} /> },
+              { key: "answer", header: copy.verify.colAnswer, cell: (r) => <span className="font-sans">{r.answer}</span>, align: "end" },
+            ]}
+          />
+        </Block>
+
+        <Block title="Footer links (R14, compact/medium)">
+          <FooterLinks settings />
+        </Block>
+
+        <Block title="Desktop shell pieces">
+          <p className="text-caption text-text-3">
+            The page header only shows through Screen&apos;s header band at ≥ lg inside a shell; previewed here directly. See
+            any /g/… page at 1024 px+ for the sidebar.
+          </p>
+          <Card>
+            <ShellHeader
+              back={{ href: `/g/${MOCK_GROUP_IDS.upsining}`, label: "UP Sining" }}
+              title={copy.roster.title}
+              context={`${copy.members.count(31)} · ${copy.members.rosterNote}`}
+              actions={<Button>{copy.roster.inviteCta}</Button>}
+            />
+          </Card>
+          <FocusedTopBar className="relative rounded-lg border" />
         </Block>
 
         <Block title="Empty states">
@@ -390,7 +542,12 @@ export function Showcase() {
           <Button variant="secondary" onClick={() => setSheetOpen(true)}>
             Open sheet
           </Button>
-          <Sheet open={sheetOpen} onOpenChange={setSheetOpen} title="Example sheet" description="Bottom sheet, focus-trapped, Esc closes.">
+          <Sheet
+            open={sheetOpen}
+            onOpenChange={setSheetOpen}
+            title="Example sheet"
+            description="Bottom sheet below 768 px, centred 480 px dialog above. Focus-trapped, Esc closes."
+          >
             <p className="text-body text-text-2">Sheet body content.</p>
           </Sheet>
           <ConfirmSheet

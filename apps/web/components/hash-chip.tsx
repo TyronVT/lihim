@@ -18,7 +18,7 @@ async function copyText(value: string) {
   }
 }
 
-/** The chip stays 36 px tall to read as a chip; this stretches each tap target to 48 px. */
+/** The chip stays 36 px tall to read as a chip; this stretches each tap target to 48 px (R9). */
 const HIT_48 = "relative after:absolute after:inset-x-0 after:-inset-y-1.5 after:content-['']";
 
 export interface HashChipProps {
@@ -35,47 +35,51 @@ export interface HashChipProps {
 /**
  * Monospace hash, middle-out truncated (never wrapped). Tap the text → full-value sheet
  * (grouped in 8-char blocks for comparing by eye); tap the copy icon → clipboard + toast.
+ * The outer box is 48 px tall so both tap targets get a real 48 px (R9) without overlapping
+ * neighbours; the visible chip inside stays 36.
  */
 export function HashChip({ value, label, head = 6, tail = 4, className }: HashChipProps) {
   const [open, setOpen] = useState(false);
   return (
-    <span className={cn("inline-flex h-9 w-fit max-w-full items-stretch rounded-sm bg-surface-raised shadow-raised text-mono font-mono text-text-1", className)}>
-      <Sheet
-        open={open}
-        onOpenChange={setOpen}
-        title={label}
-        trigger={
-          <button
-            type="button"
-            className={cn("whitespace-nowrap rounded-l-sm px-2.5 tabular hover:bg-border", HIT_48)}
-            aria-label={`${label}: ${truncateMiddle(value, head, tail)}. ${copy.common.showFull}`}
-          >
-            {truncateMiddle(value, head, tail)}
-          </button>
-        }
-        footer={
-          <Button variant="secondary" onClick={() => copyText(value)}>
-            <Icon icon="copy" />
-            {copy.common.copy}
-          </Button>
-        }
-      >
-        <p className="sr-only">{value}</p>
-        <div aria-hidden className="grid grid-cols-4 gap-x-3 gap-y-1 rounded-sm bg-surface-raised p-3 font-mono text-mono text-text-1">
-          {value.startsWith("0x") && <span className="col-span-4 text-text-3">0x</span>}
-          {chunkHex(value).map((c, i) => (
-            <span key={i}>{c}</span>
-          ))}
-        </div>
-      </Sheet>
-      <button
-        type="button"
-        onClick={() => copyText(value)}
-        aria-label={`${copy.common.copy} ${label}`}
-        className={cn("flex w-12 shrink-0 items-center justify-center rounded-r-sm border-l border-border text-text-2 hover:bg-border hover:text-text-1", HIT_48)}
-      >
-        <Icon icon="copy" size={16} />
-      </button>
+    <span className={cn("inline-flex h-12 w-fit max-w-full items-center", className)}>
+      <span className="inline-flex h-9 max-w-full items-stretch rounded-sm bg-surface-raised font-mono text-mono text-text-1 shadow-raised">
+        <Sheet
+          open={open}
+          onOpenChange={setOpen}
+          title={label}
+          trigger={
+            <button
+              type="button"
+              className={cn("whitespace-nowrap rounded-l-sm px-2.5 tabular hover:bg-border", HIT_48)}
+              aria-label={`${label}: ${truncateMiddle(value, head, tail)}. ${copy.common.showFull}`}
+            >
+              {truncateMiddle(value, head, tail)}
+            </button>
+          }
+          footer={
+            <Button variant="secondary" onClick={() => copyText(value)}>
+              <Icon icon="copy" />
+              {copy.common.copy}
+            </Button>
+          }
+        >
+          <p className="sr-only">{value}</p>
+          <div aria-hidden className="grid grid-cols-4 gap-x-3 gap-y-1 rounded-sm bg-surface-raised p-3 font-mono text-mono text-text-1">
+            {value.startsWith("0x") && <span className="col-span-4 text-text-3">0x</span>}
+            {chunkHex(value).map((c, i) => (
+              <span key={i}>{c}</span>
+            ))}
+          </div>
+        </Sheet>
+        <button
+          type="button"
+          onClick={() => copyText(value)}
+          aria-label={`${copy.common.copy} ${label}`}
+          className={cn("flex w-12 shrink-0 items-center justify-center rounded-r-sm border-l border-border text-text-2 hover:bg-border hover:text-text-1", HIT_48)}
+        >
+          <Icon icon="copy" size={16} />
+        </button>
+      </span>
     </span>
   );
 }

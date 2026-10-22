@@ -14,24 +14,11 @@
  *   Fallback when PRF is unsupported (random identity + recovery code) is decided in M0.
  */
 
-export class PasskeyCancelledError extends Error {
-  constructor() {
-    super("Passkey prompt dismissed");
-    this.name = "PasskeyCancelledError";
-  }
-}
+import { PasskeyCancelledError, PasskeyUnsupportedError } from "@/lib/data/errors";
+import { passkeysAvailable } from "@/lib/passkey";
 
-export class PasskeyUnsupportedError extends Error {
-  constructor() {
-    super("WebAuthn unavailable");
-    this.name = "PasskeyUnsupportedError";
-  }
-}
-
-/** WebAuthn present at all. PRF support can only be known from the ceremony result. */
-export function passkeysAvailable(): boolean {
-  return typeof window !== "undefined" && typeof window.PublicKeyCredential === "function";
-}
+// Shared with L0 (lib/data/errors.ts), so `instanceof` works the same for repo.signUp/signIn.
+export { PasskeyCancelledError, PasskeyUnsupportedError, passkeysAvailable };
 
 const MOCK_PROMPT_MS = 800;
 

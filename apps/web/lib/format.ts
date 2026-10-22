@@ -112,3 +112,11 @@ export function formatRelative(d: DateInput, now: DateInput = Date.now()): strin
   if (abs < 86_400_000) return rtf.format(Math.round(ms / 3_600_000), "hour");
   return rtf.format(Math.round(ms / 86_400_000), "day");
 }
+
+/** "just now" / "a minute ago" / "5 minutes ago" — freshness lines (L7 "Updated a minute ago"). */
+export function formatAgo(d: DateInput, now: DateInput = Date.now()): string {
+  const ms = toDate(now).getTime() - toDate(d).getTime();
+  if (ms < 30_000) return "just now";
+  if (ms < 120_000) return "a minute ago";
+  return formatRelative(d, now);
+}

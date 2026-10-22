@@ -258,8 +258,13 @@ async function upsertDraftPoll(
       .select('id')
       .maybeSingle();
     if (error) throw new HttpError(400, 'invalid', error.message);
-    if (!data) throw new HttpError(409, 'conflict', 'poll is not a draft of this group');
-    return data.id;
+    if (data) return data.id;
+    // First attempt with a browser-picked id (the web app sends the same id on every retry):
+    // insert it, unless that id already belongs to something that isn't this group's draft.
+    const { data: inserted, error: insertError } = await db.from('polls').insert({ ...row, id: p.id }).select('id').single();
+    if (insertError?.code === '23505') throw new HttpError(409, 'conflict', 'poll is not a draft of this group');
+    if (insertError) throw new HttpError(400, 'invalid', insertError.message);
+    return inserted.id;
   }
   const { data, error } = await db.from('polls').insert(row).select('id').single();
   if (error) throw new HttpError(400, 'invalid', error.message);
