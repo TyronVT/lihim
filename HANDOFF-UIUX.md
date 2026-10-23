@@ -1,8 +1,11 @@
-# Handoff — UI/UX build (2026-10-23)
+# Handoff — UI/UX build (updated 2026-10-23)
 
-Branch `uiux-desktop`. Continues from `HANDOFF.md` (scaffold) and implements `lihim-UIUX-SPEC.md`
-(mobile review fixes + desktop version). Use case diagram the spec is built on:
+Continues from `HANDOFF.md` (scaffold) and implements `lihim-UIUX-SPEC.md` (mobile review fixes +
+desktop version). Use case diagram the spec is built on:
 https://claude.ai/artifact/1uthtU2piLJq4vfbjzTYPe (private to the owner).
+
+The UI/UX work is on `main` (commits `05515b0` foundation, `7816126` screens, `68eb023` icons). The
+`uiux-desktop` branch named in older notes is no longer needed.
 
 ## Status
 
@@ -10,42 +13,55 @@ https://claude.ai/artifact/1uthtU2piLJq4vfbjzTYPe (private to the owner).
 |---|---|
 | Use case diagram (UC01–UC17) | Done (artifact above) |
 | `lihim-UIUX-SPEC.md` | Done. Product decisions P1–P6 treated as accepted by the owner ("build the new ui/ux") |
-| Foundation: data layer, copy, route groups, desktop shells, shared components | **Done**, checks green |
-| Screens (5 builders) | **Not started** — workflow was stopped while builders were still reading; no screen edits landed |
-| Integration + visual QA | Not started |
+| Foundation: data layer, copy, route groups, desktop shells, shared components | Done (`05515b0`) |
+| Screens L0–L10 | **Done** (`7816126`): L0 sign in, L10 settings, home, L8 privacy; L3 group home, invite sheet, leave group, L4 members table; L1/L5 create flows with review sheet and desktop live preview; L6 select-then-send and L7 results; L2 join and L9 verify |
+| Integration | Done in the same commit: shared display-name rules, `PollNotOpenedError`, `getPollAudit` reads `cached_tally`, new mock failure triggers, shell component props |
+| Line icons | **Done** (`68eb023`): 42 custom Lihim glyphs replace Lucide (`design/ICONS.md`, contact sheet at `/dev/icons`); `Button` has an `icon` prop; `lucide-react` removed |
+| Landing page `/welcome` | **Done**: see "Landing page" below |
+| Visual QA at every breakpoint (360/768/1024/1280/1440, dark + light) | **Not recorded** for the L0–L10 screens; do the pass in step 3 below. `/welcome` was checked at 375 and 1440 (dark) |
 
-Checks at hand-off (apps/web): `npx tsc --noEmit` pass, `npx eslint .` pass. Foundation also ran
-`npm run build -w @lihim/web` and `npm test -w @lihim/supabase-tests` (27 pass) green.
+Checks on the current head (2026-10-23): `npx tsc --noEmit` and `npx eslint .` in `apps/web` pass,
+`npm run build -w @lihim/web` passes, `npm test -w @lihim/supabase-tests` 27/27 pass.
 
-Known interim state (expected until screens are built): at ≥ 1024 px existing screens have no h1 and no
-primary action (they don't pass `Screen header` yet); L3 shows failed drafts as "Opening…"; L5 still
-navigates to `/p/<id>` after creating a poll; `/signin` and `/settings` are placeholders.
+The interim gaps listed in the earlier version of this file (no h1/primary action at ≥ 1024 px,
+"Opening…" for failed drafts, L5 navigating to `/p/<id>`, placeholder `/signin` and `/settings`)
+were closed by the screens commit.
+
+## Landing page
+
+`apps/web/app/(marketing)/welcome/` (route group `(marketing)`, so no app shell and no auth gate):
+
+- `page.tsx` (server): hero, comparison table, five steps, the Semaphore V4 section, tech stack,
+  house rules, closing CTA, footer. Metadata uses the full tagline.
+- `_components/hero.tsx`: the commitment field backdrop with a pointer "torch" (mouse only).
+- `_components/proof-demo.tsx`: interactive depth-3 LeanIMT. Prove → path climbs to the root →
+  public signals appear; answering twice is rejected by the nullifier; a new poll gives a new
+  nullifier; "Your phone / The chain" toggles what each side can see.
+- `_components/hex.ts`: deterministic stand-in hashes (not Poseidon; the page says so).
+- `_components/reveal.tsx`: scroll reveal and the pointer-lit card edge.
+- `landing.module.css`: display sizes and effects, kept out of the app's type scale on purpose.
+  Graphite tokens only, no brand hue; everything degrades under reduced motion.
+
+Open decisions for the owner:
+
+- `/` is still the gated app home, so signed-out visitors go to `/signin`, not `/welcome`. Should
+  signed-out `/` (or the gate's redirect) send people to `/welcome` instead?
+- The page states the relay keeps no IP logs and that polls need 8+ members. Both match the spec,
+  but the relay-hosting check (privacy follow-up in `HANDOFF.md`) is still open.
+- The footer says Lihim is in development and not yet on testnet. Update it after M0.
 
 ## How to continue
 
 1. `npm install` at the root, then `npm run build -w @lihim/sdk` (the web typecheck reads the SDK's `dist/`).
 2. Read `lihim-UIUX-SPEC.md`, then the "Desktop shell and UI/UX spec components" section of
    `apps/web/COMPONENTS.md`, then the foundation handoff below.
-3. Run the saved workflow: `.claude/workflows/lihim-uiux-screens.js` (name `lihim-uiux-screens`), with
-   args `{ "root": "<absolute repo path>" }`. It runs five screen builders in parallel with disjoint file
-   ownership, then one integration builder:
-
-   | Builder | Owns |
-   |---|---|
-   | account | L0 `/signin`, L10 `/settings`, Home, L8 `/privacy`, `components/theme-select.tsx` |
-   | group | L3 group home, switcher, invite sheet (turn off link), leave group, L4 members (table, adding-members status, removed section) |
-   | create | L1 create group, L5 create poll (review sheet, desktop live preview) |
-   | answer | L6 vote (select then "Send answer", number keys), L7 results; `option-group`, `results`, `vote-status`, `lib/vote.ts` |
-   | public | L2 join (inline account creation, alerts card), L9 verify (states, desktop table); `hash-chip` |
-
-   Or build the screens by hand in that split.
-4. Visual QA: run the web app on mock data (`npm run dev -w @lihim/web`) and check every screen at 360, 768,
+3. Visual QA: run the web app on mock data (`npm run dev -w @lihim/web`) and check every screen at 360, 768,
    1024, 1280 and 1440, in dark and light. Mock failure triggers: `?mockFail=cancelled|no-passkey|unsupported`
    (sign in/up) and `?mockFail=poll` (poll fails to open). Mock is signed in as Ana; sign out persists in
    localStorage `lihim:mock:signed-out:v1`.
    Headless Chrome clamps the window to ~500 px wide, so phone screenshots need real device emulation
    (e.g. Playwright `viewport: {width: 360}`), not `--window-size`.
-5. Ask the owner before committing further or opening a PR.
+4. Then the backend items below and in `HANDOFF.md` (testnet M0 first).
 
 ## Open items carried over
 

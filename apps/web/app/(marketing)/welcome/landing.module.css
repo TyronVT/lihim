@@ -1,0 +1,251 @@
+/*
+ * Landing page only. Display sizes and effects here sit outside the app's type scale on purpose:
+ * the marketing page is allowed one step louder than the app (lihim-DESIGN.md → Colour, "marketing
+ * site"), but keeps the same graphite tokens, no brand hue, no glows, no glitch.
+ */
+
+.hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  --x: 50%;
+  --y: 40%;
+}
+
+/* A field of commitments: dim everywhere, readable only under the pointer's light. */
+.field {
+  position: absolute;
+  inset: -24px;
+  z-index: -1;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 22px;
+  letter-spacing: 0.02em;
+  color: var(--text-3);
+  word-break: break-all;
+  user-select: none;
+  pointer-events: none;
+  opacity: 0.08;
+}
+
+.fieldLit {
+  composes: field;
+  color: var(--text-1);
+  opacity: 0.85;
+  mask-image: radial-gradient(220px circle at var(--x) var(--y), #000 0%, transparent 70%);
+  -webkit-mask-image: radial-gradient(220px circle at var(--x) var(--y), #000 0%, transparent 70%);
+  transition: opacity var(--motion-slow) ease-out;
+}
+
+.hero:not([data-pointer="on"]) .fieldLit {
+  opacity: 0;
+}
+
+/* Fades the field into the page at the edges so the headline sits on calm ground. */
+.vignette {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 60% 55% at 50% 45%, var(--bg) 20%, transparent 75%),
+    linear-gradient(to bottom, transparent 70%, var(--bg));
+  opacity: 0.92;
+}
+
+.display {
+  font-size: clamp(40px, 8vw, 88px);
+  line-height: 1.02;
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+
+.h2 {
+  font-size: clamp(28px, 4.4vw, 48px);
+  line-height: 1.08;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+}
+
+.lede {
+  font-size: clamp(17px, 1.6vw, 20px);
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+
+/* Words arrive out of focus, then sharpen: something hidden becoming legible. */
+.unblur {
+  display: inline-block;
+  animation: unblur 1100ms cubic-bezier(0.2, 0, 0, 1) both;
+  animation-delay: calc(var(--i, 0) * 90ms + 120ms);
+}
+
+@keyframes unblur {
+  from {
+    opacity: 0;
+    filter: blur(12px);
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: none;
+  }
+}
+
+/* The one hidden word: arrives as a smudge and comes into focus last. */
+.veil {
+  display: inline-block;
+  animation: veil 1400ms cubic-bezier(0.2, 0, 0, 1) 1500ms both;
+}
+
+@keyframes veil {
+  from {
+    color: transparent;
+    text-shadow: 0 0 18px color-mix(in srgb, var(--text-1) 70%, transparent);
+  }
+  to {
+    color: var(--text-1);
+    text-shadow: 0 0 0 transparent;
+  }
+}
+
+/* Scroll reveal (toggled by <Reveal>). */
+.reveal {
+  opacity: 0;
+  transform: translateY(16px);
+  transition:
+    opacity 700ms cubic-bezier(0.2, 0, 0, 1),
+    transform 700ms cubic-bezier(0.2, 0, 0, 1);
+  transition-delay: var(--delay, 0ms);
+}
+
+.reveal[data-shown="true"] {
+  opacity: 1;
+  transform: none;
+}
+
+/* Cards with a faint lit edge that follows the pointer. */
+.lit {
+  position: relative;
+  isolation: isolate;
+  --mx: 50%;
+  --my: 0%;
+}
+
+.lit::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  padding: 1px;
+  background: radial-gradient(260px circle at var(--mx) var(--my), var(--accent), transparent 70%);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: xor;
+  opacity: 0;
+  transition: opacity var(--motion-slow) ease-out;
+}
+
+.lit:hover::before {
+  opacity: 0.6;
+}
+
+/* Event ticker. */
+.ticker {
+  mask-image: linear-gradient(to right, transparent, #000 10%, #000 90%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 10%, #000 90%, transparent);
+}
+
+.tickerTrack {
+  display: flex;
+  width: max-content;
+  animation: ticker 60s linear infinite;
+}
+
+.ticker:hover .tickerTrack {
+  animation-play-state: paused;
+}
+
+@keyframes ticker {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* Merkle tree demo. */
+.edge {
+  stroke: var(--border);
+  stroke-width: 1.5;
+  transition: stroke 400ms ease-out;
+}
+
+.edge[data-on="true"] {
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+
+.node {
+  fill: var(--surface);
+  stroke: var(--border-control);
+  stroke-width: 1;
+  transition:
+    fill 400ms ease-out,
+    stroke 400ms ease-out;
+}
+
+.node[data-on="true"] {
+  fill: var(--surface-raised);
+  stroke: var(--accent);
+  stroke-width: 1.5;
+}
+
+.node[data-you="true"] {
+  fill: var(--primary-bg);
+  stroke: var(--primary-bg);
+}
+
+.nodeLabel {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  fill: var(--text-2);
+  transition: fill 400ms ease-out;
+}
+
+.blurred {
+  filter: blur(5px);
+  transition: filter 600ms ease-out;
+}
+
+.sharp {
+  filter: blur(0);
+  transition: filter 600ms ease-out;
+}
+
+.typeIn {
+  animation: fade-in 400ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .unblur,
+  .typeIn {
+    animation: fade-in 120ms ease-out both;
+  }
+  .tickerTrack {
+    animation: none;
+  }
+  .reveal {
+    transform: none;
+  }
+  .fieldLit {
+    display: none;
+  }
+  .veil {
+    animation: none;
+  }
+}
