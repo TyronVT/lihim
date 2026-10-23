@@ -22,6 +22,7 @@
 import { useEffect, useSyncExternalStore } from "react";
 import { copy } from "./copy";
 import { repo, type CurrentUser } from "./data";
+import { APP_HOME, LANDING } from "@/lib/routes";
 
 /** Longest display name (same cap as a group name, L1). */
 export const DISPLAY_NAME_MAX = 60;
@@ -103,15 +104,15 @@ export async function updateDisplayName(displayName: string): Promise<CurrentUse
 }
 
 /**
- * Where L0 sends the user after signing in: `?next=` when it is a same-site path, else "/".
+ * Where L0 sends the user after signing in: `?next=` when it is a same-site path, else APP_HOME.
  * Rejects absolute and protocol-relative URLs (open-redirect guard).
  */
 export function safeNextPath(next: string | null | undefined): string {
-  if (!next || !next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) return "/";
+  if (!next || !next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) return APP_HOME;
   return next;
 }
 
 /** "/signin?next=<path>" for the auth gate (P1: "→ L0, then back"). */
 export function signInHref(next?: string): string {
-  return next && next !== "/" ? `/signin?next=${encodeURIComponent(next)}` : "/signin";
+  return next && next !== APP_HOME && next !== LANDING ? `/signin?next=${encodeURIComponent(next)}` : "/signin";
 }

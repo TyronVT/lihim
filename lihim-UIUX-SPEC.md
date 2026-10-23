@@ -121,7 +121,7 @@ Expanded (≥1024)
   current group marked with a 2 px `--accent` bar), "New group", then at the
   bottom "Who can see what", "Settings" and the signed-in name.
 - Sidebar replaces both the Home group list and the L3 group switcher on
-  desktop. The `/` route on desktop opens the last-visited group (or the
+  desktop. The `/groups` route on desktop opens the last-visited group (or the
   empty state if none).
 - Page header: back link when the page is a child (L4, L5, L6, L7), title,
   one line of context, and **the** primary action that the pinned footer holds
@@ -172,7 +172,8 @@ signed in, "Sign in" becomes "Your groups".
 
 | Route | Screen | Shell (desktop) | Signed out? |
 |---|---|---|---|
-| `/` | Home (compact) / last group (expanded) | App | → L0 |
+| `/` | Landing page (public; "Open app" → `/groups`) | None (own top bar) | Yes |
+| `/groups` | Home (compact) / last group (expanded) | App | → L0 |
 | `/signin` | **L0 Sign in** (new) | Focused | Yes |
 | `/groups/new` | L1 Create group | App | → L0 |
 | `/join/[token]` | L2 Join | Focused | Yes |
@@ -235,7 +236,7 @@ Compact: as today, plus:
   primary "Create group".
 - Footer row: "Who can see what" (R14) and "Settings".
 
-Expanded: Home is replaced by the sidebar; `/` opens the last group. If the
+Expanded: Home is replaced by the sidebar; `/groups` opens the last group. If the
 user has no groups, the main area shows the empty state above.
 
 ### L1 Create group (UC10, S5, then UC11)

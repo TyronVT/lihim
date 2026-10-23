@@ -15,6 +15,7 @@ import { Button } from "./button";
 import { Icon } from "./icons";
 import { Skeleton } from "./skeleton";
 import { Lockup } from "./wordmark";
+import { APP_HOME, LANDING } from "@/lib/routes";
 
 // ---------------------------------------------------------------------------
 // Context
@@ -129,7 +130,7 @@ export function Sidebar() {
   return (
     <nav aria-label={copy.shell.sidebarLabel} className="flex h-dvh flex-col border-r border-border bg-bg">
       <div className="px-4 pt-5 pb-4">
-        <Link href="/" aria-label={copy.shell.homeLink} className="inline-flex rounded-md">
+        <Link href={APP_HOME} aria-label={copy.shell.homeLink} className="inline-flex rounded-md">
           <Lockup markSize={32} />
         </Link>
       </div>
@@ -241,7 +242,7 @@ export function FocusedTopBar({ className }: { className?: string }) {
   return (
     <header className={cn("sticky top-0 z-30 border-b border-border bg-bg pt-[env(safe-area-inset-top)]", className)}>
       <div className="mx-auto flex h-16 w-full items-center gap-2 px-gutter lg:px-8">
-        <Link href="/" aria-label={copy.shell.homeLink} className="inline-flex shrink-0 rounded-md">
+        <Link href={signedIn ? APP_HOME : LANDING} aria-label={copy.shell.homeLink} className="inline-flex shrink-0 rounded-md">
           <Lockup markSize={32} />
         </Link>
         <nav aria-label={copy.shell.footerLabel} className="ml-auto flex items-center gap-1">
@@ -256,7 +257,7 @@ export function FocusedTopBar({ className }: { className?: string }) {
           </Link>
           {pathname !== "/signin" && session.status !== "loading" && (
             <Button asChild variant="secondary" block={false} className="px-4" icon={signedIn ? "groups" : "passkey"}>
-              <Link href={signedIn ? "/" : signInHref(pathname)}>{signedIn ? copy.shell.groupsHome : copy.shell.signIn}</Link>
+              <Link href={signedIn ? APP_HOME : signInHref(pathname)}>{signedIn ? copy.shell.groupsHome : copy.shell.signIn}</Link>
             </Button>
           )}
         </nav>

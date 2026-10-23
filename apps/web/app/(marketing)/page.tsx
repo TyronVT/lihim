@@ -9,6 +9,7 @@ import { Hero } from "./_components/hero";
 import { ProofDemo } from "./_components/proof-demo";
 import { LitCard, Reveal } from "./_components/reveal";
 import styles from "./landing.module.css";
+import { APP_HOME, LANDING } from "@/lib/routes";
 
 export const metadata: Metadata = {
   title: { absolute: `${copy.brand.name} — ${copy.brand.tagline}` },
@@ -57,7 +58,7 @@ export default function WelcomePage() {
             </p>
             <div className="mt-10 flex w-full max-w-[420px] flex-col gap-3 sm:flex-row">
               <Button asChild icon="arrowRight">
-                <Link href="/">Open Lihim</Link>
+                <Link href={APP_HOME}>Open Lihim</Link>
               </Button>
               <Button asChild variant="secondary" icon="verified">
                 <a href="#zk">See the proof</a>
@@ -251,7 +252,7 @@ function TopBar() {
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-bg">
       <div className={cn(WRAP, "flex h-16 items-center justify-between gap-4")}>
-        <Link href="/welcome" aria-label="Lihim home" className="rounded-sm">
+        <Link href={LANDING} aria-label="Lihim home" className="rounded-sm">
           <Lockup markSize={32} />
         </Link>
         <nav aria-label="Page sections" className="hidden items-center gap-8 text-label text-text-2 md:flex">
@@ -269,7 +270,7 @@ function TopBar() {
           </Link>
         </nav>
         <Button asChild block={false} className="min-h-10 px-4">
-          <Link href="/">Open app</Link>
+          <Link href={APP_HOME}>Open app</Link>
         </Button>
       </div>
     </header>

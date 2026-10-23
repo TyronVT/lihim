@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { AppBar, Button, EmptyState, Notice, Screen, ShellHeader, Skeleton, type ScreenWidth } from "@/components";
 import { copy } from "@/lib/copy";
+import { APP_HOME } from "@/lib/routes";
 
 /**
  * Static placeholder shaped like the question + options, so the layout doesn't jump. At ≥ lg the
@@ -48,7 +49,7 @@ export function PollNotFound() {
           body={copy.vote.notFoundBody}
           action={
             <Button icon="groups" asChild variant="secondary">
-              <Link href="/">{copy.home.title}</Link>
+              <Link href={APP_HOME}>{copy.home.title}</Link>
             </Button>
           }
         />

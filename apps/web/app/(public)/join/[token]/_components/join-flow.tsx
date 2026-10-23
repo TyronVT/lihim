@@ -27,6 +27,7 @@ import { useQuery } from "@/lib/data/hooks";
 import { formatWhen } from "@/lib/format";
 import { DISPLAY_NAME_MAX, cleanDisplayName, displayNameError, signIn, signUp, useSession } from "@/lib/session";
 import { PasskeyCancelledError, PasskeyUnsupportedError, unlockGroupIdentity } from "./passkey";
+import { APP_HOME } from "@/lib/routes";
 
 /** Same cap as L0's name field. */
 
@@ -143,7 +144,7 @@ export function JoinFlow({ token }: { token: string }) {
               action={
                 signedIn ? (
                   <Button asChild variant="secondary" icon="groups">
-                    <Link href="/">{copy.join.home}</Link>
+                    <Link href={APP_HOME}>{copy.join.home}</Link>
                   </Button>
                 ) : (
                   <Button asChild variant="secondary" icon="anonymous">

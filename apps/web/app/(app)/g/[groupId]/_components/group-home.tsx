@@ -36,6 +36,7 @@ import { pollDisplayStatus, type PollDisplayStatus } from "@/lib/poll";
 import { GroupSwitcher } from "./group-switcher";
 import { InviteSheet } from "./invite-sheet";
 import { GroupError, GroupLoading, GroupNotFound } from "./states";
+import { APP_HOME } from "@/lib/routes";
 
 /** Re-read the poll list this often while a poll is still opening (P6; the tx usually lands in seconds). */
 const OPENING_POLL_MS = 5_000;
@@ -449,7 +450,7 @@ function LeaveGroupSheet({ group, open, onOpenChange }: { group: Group; open: bo
     notify.success(copy.leaveGroup.left(group.name));
     forgetLastGroup(group.id);
     refreshGroups();
-    router.replace("/");
+    router.replace(APP_HOME);
   };
 
   return (

@@ -11,7 +11,7 @@ import { lastGroupId } from "@/lib/last-group";
 import { MEDIA, useMediaQuery } from "@/lib/media";
 
 /**
- * "/" at ≥ lg (lihim-UIUX-SPEC.md §3): the sidebar replaces Home's list, so open the
+ * /groups at ≥ lg (lihim-UIUX-SPEC.md §3): the sidebar replaces Home's list, so open the
  * last-visited group (else the first one); with no groups, show the empty state here.
  * Renders nothing below lg, where Home stays the group list.
  */

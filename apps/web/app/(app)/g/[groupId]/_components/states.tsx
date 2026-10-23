@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Button, EmptyState, Notice, Skeleton, SkeletonList } from "@/components";
 import { copy } from "@/lib/copy";
 import { ForbiddenError, NotFoundError } from "@/lib/data";
+import { APP_HOME } from "@/lib/routes";
 
 /** Static placeholder for a group screen while the first read is in flight. */
 export function GroupLoading() {
@@ -27,7 +28,7 @@ export function GroupNotFound() {
       body={copy.hub.notFoundBody}
       action={
         <Button icon="groups" asChild variant="secondary">
-          <Link href="/">{copy.hub.home}</Link>
+          <Link href={APP_HOME}>{copy.hub.home}</Link>
         </Button>
       }
     />

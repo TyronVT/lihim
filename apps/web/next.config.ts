@@ -3,6 +3,10 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   // The vote path must not leak where the voter came from; the relay is on another origin.
+  // The landing page lived at /welcome before it became "/".
+  async redirects() {
+    return [{ source: "/welcome", destination: "/", permanent: false }];
+  },
   async headers() {
     return [
       {

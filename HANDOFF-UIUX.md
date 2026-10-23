@@ -17,8 +17,8 @@ The UI/UX work is on `main` (commits `05515b0` foundation, `7816126` screens, `6
 | Screens L0–L10 | **Done** (`7816126`): L0 sign in, L10 settings, home, L8 privacy; L3 group home, invite sheet, leave group, L4 members table; L1/L5 create flows with review sheet and desktop live preview; L6 select-then-send and L7 results; L2 join and L9 verify |
 | Integration | Done in the same commit: shared display-name rules, `PollNotOpenedError`, `getPollAudit` reads `cached_tally`, new mock failure triggers, shell component props |
 | Line icons | **Done** (`68eb023`): 42 custom Lihim glyphs replace Lucide (`design/ICONS.md`, contact sheet at `/dev/icons`); `Button` has an `icon` prop; `lucide-react` removed |
-| Landing page `/welcome` | **Done**: see "Landing page" below |
-| Visual QA at every breakpoint (360/768/1024/1280/1440, dark + light) | **Not recorded** for the L0–L10 screens; do the pass in step 3 below. `/welcome` was checked at 375 and 1440 (dark) |
+| Landing page at `/` (app home moved to `/groups`) | **Done**: see "Landing page" below |
+| Visual QA at every breakpoint (360/768/1024/1280/1440, dark + light) | **Not recorded** for the L0–L10 screens; do the pass in step 3 below. The landing page was checked at 375 and 1440 (dark) |
 
 Checks on the current head (2026-10-23): `npx tsc --noEmit` and `npx eslint .` in `apps/web` pass,
 `npm run build -w @lihim/web` passes, `npm test -w @lihim/supabase-tests` 27/27 pass.
@@ -29,7 +29,7 @@ were closed by the screens commit.
 
 ## Landing page
 
-`apps/web/app/(marketing)/welcome/` (route group `(marketing)`, so no app shell and no auth gate):
+`apps/web/app/(marketing)/` serves `/` (route group `(marketing)`, so no app shell and no auth gate):
 
 - `page.tsx` (server): hero, comparison table, five steps, the Semaphore V4 section, tech stack,
   house rules, closing CTA, footer. Metadata uses the full tagline.
@@ -42,10 +42,21 @@ were closed by the screens commit.
 - `landing.module.css`: display sizes and effects, kept out of the app's type scale on purpose.
   Graphite tokens only, no brand hue; everything degrades under reduced motion.
 
+Routing (owner decision, 2026-10-23: "/ should be the landing page"):
+
+- `/` is the landing page for everyone. The signed-in home moved to `/groups` (`app/(app)/groups/page.tsx`,
+  `groups/_home/`); constants `LANDING` / `APP_HOME` in `lib/routes.ts`.
+- `/welcome` redirects to `/` (`next.config.ts`).
+- Sign out lands on `/`. The gate still sends signed-out visitors on app routes to `/signin` (with `?next=`
+  for deep links), and sign-in without `?next=` goes to `/groups`.
+- All "Your groups"/home links, the sidebar lockup and the not-found page point at `/groups`; the focused
+  top bar's lockup goes to `/groups` when signed in, `/` when signed out.
+- The PWA manifest now sets `start_url: "/groups"`, so the installed app skips the landing page.
+- Checked on the production build at 375 and 1440 px: `/`, `/welcome` redirect, Open app, sign out,
+  signed-out `/groups` and `/g/…`, sign in.
+
 Open decisions for the owner:
 
-- `/` is still the gated app home, so signed-out visitors go to `/signin`, not `/welcome`. Should
-  signed-out `/` (or the gate's redirect) send people to `/welcome` instead?
 - The page states the relay keeps no IP logs and that polls need 8+ members. Both match the spec,
   but the relay-hosting check (privacy follow-up in `HANDOFF.md`) is still open.
 - The footer says Lihim is in development and not yet on testnet. Update it after M0.

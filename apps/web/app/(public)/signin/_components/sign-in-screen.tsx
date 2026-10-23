@@ -6,6 +6,7 @@ import { Button, FooterLinks, Lockup, Notice, Screen, TextField } from "@/compon
 import { copy } from "@/lib/copy";
 import { PasskeyCancelledError, PasskeyNotFoundError, PasskeyUnsupportedError } from "@/lib/data";
 import { DISPLAY_NAME_MAX, cleanDisplayName, displayNameError, safeNextPath, signIn, signUp, useSession } from "@/lib/session";
+import { APP_HOME } from "@/lib/routes";
 
 /** Same cap as a group name (L1); the roster row has room for it. */
 
@@ -30,7 +31,7 @@ function useNextParam(): string | null {
 /** "Sign in to open this poll." / "…this group." for a gated link (§4 "→ L0, then back"). */
 function nextLine(next: string | null): string | null {
   const path = safeNextPath(next);
-  if (path === "/") return null;
+  if (path === APP_HOME) return null;
   if (path.startsWith("/p/")) return copy.signin.nextPoll;
   if (path.startsWith("/g/")) return copy.signin.nextGroup;
   return copy.signin.nextOther;
@@ -41,7 +42,7 @@ function nextLine(next: string | null): string | null {
  * group identities. "New here?" switches to the new-account step: the name is asked once, then
  * "Continue" runs the same prompt in create mode (signUp takes the name, so it comes first).
  * Compact: the page itself, content on --bg. ≥ lg (focused shell): one centred 440 card.
- * A signed-in visitor is sent on to ?next= (or "/").
+ * A signed-in visitor is sent on to ?next= (or APP_HOME, /groups).
  */
 export function SignInScreen() {
   const router = useRouter();

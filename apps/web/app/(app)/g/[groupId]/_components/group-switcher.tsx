@@ -6,6 +6,7 @@ import { Button, Icon, ListRow, Notice, Sheet, SkeletonList } from "@/components
 import { copy } from "@/lib/copy";
 import { repo } from "@/lib/data";
 import { useQuery } from "@/lib/data/hooks";
+import { APP_HOME } from "@/lib/routes";
 
 /**
  * The L3 app-bar title: the current group's name, tappable to switch groups
@@ -85,7 +86,7 @@ function SwitcherList({ currentId, onPick }: { currentId: string; onPick: () => 
         })}
       </ul>
       <Link
-        href="/"
+        href={APP_HOME}
         onClick={onPick}
         className="self-start py-3 text-label text-text-2 underline-offset-4 hover:text-text-1 hover:underline"
       >

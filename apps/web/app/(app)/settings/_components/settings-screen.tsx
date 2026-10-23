@@ -6,6 +6,7 @@ import { AppBar, Button, Icon, ListRow, Notice, Screen, Section, ShellHeader, Sw
 import { copy } from "@/lib/copy";
 import { disableAlerts, enableAlerts, useAlertsState } from "@/lib/alerts";
 import { DISPLAY_NAME_MAX, cleanDisplayName, displayNameError, signOut, updateDisplayName, useSession } from "@/lib/session";
+import { LANDING } from "@/lib/routes";
 
 /** Same cap as L0's name field. */
 
@@ -169,7 +170,7 @@ function AccountControl({ name }: { name: string }) {
     setBusy(true);
     try {
       await signOut();
-      router.replace("/signin");
+      router.replace(LANDING);
     } catch {
       notify.error(copy.errors.generic);
       setBusy(false);

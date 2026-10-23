@@ -98,7 +98,7 @@ Theme: dark default; light via `prefers-color-scheme` or the user override (`<Th
 | `lib/session` | `useSession()`, `signIn()`, `signUp(name)`, `signOut()`, `updateDisplayName(name)`, `refreshSession()`, `safeNextPath(next)`, `signInHref(next?)` — see desktop section |
 | `lib/alerts` | `useAlertsState()`, `getAlertsState()`, `enableAlerts()`, `disableAlerts()`, `markAlertsAsked()`, `wasAlertsAsked()`, `shouldAskForAlerts()` (P2) |
 | `lib/media` | `MEDIA.md/lg/xl`, `useMediaQuery(query)` (behaviour only; layout stays in CSS) |
-| `lib/last-group` | `rememberLastGroup(id)`, `lastGroupId()`, `forgetLastGroup(id?)` (desktop "/") |
+| `lib/last-group` | `rememberLastGroup(id)`, `lastGroupId()`, `forgetLastGroup(id?)` (desktop `/groups`) |
 | `lib/passkey` | Supabase passkey ceremony (`passkeySignIn`, `passkeySignUp`, `passkeysAvailable`) — screens use `lib/session`, not this |
 | `lib/copy` | `copy.*` — every string |
 | `lib/theme` | `useThemePreference`, `applyTheme` |
@@ -135,13 +135,15 @@ the mock relay logs the exact `/vote` body. The proof's root differs from the mo
 ## Route map (screen agents implement these)
 
 Files live under route groups (URLs unchanged): `app/(app)/…` = signed-in screens behind the auth gate in the
-AppShell (`/`, `/groups/new`, `/g/**`, `/p/**`, `/privacy`, `/settings`); `app/(public)/…` = FocusedShell, never
-gated (`/signin`, `/join/[token]`, `/verify/[pollId]`). `app/dev`, `not-found`, `layout.tsx`, icons and manifest
+AppShell (`/groups`, `/groups/new`, `/g/**`, `/p/**`, `/privacy`, `/settings`); `app/(public)/…` = FocusedShell, never
+gated (`/signin`, `/join/[token]`, `/verify/[pollId]`); `app/(marketing)/` = the `/` landing page, no shell,
+never gated (`/welcome` redirects to it). Route constants: `LANDING` and `APP_HOME` in `lib/routes.ts`. `app/dev`, `not-found`, `layout.tsx`, icons and manifest
 stay at `app/`.
 
 | ID | Route | Notes |
 |---|---|---|
-| — | `/` | Home: lockup, group list, "Create group". ≥ lg: opens the last group (`_home/desktop-home.tsx`) |
+| — | `/` | Landing page (`app/(marketing)`): hero, proof demo, stack. "Open app" → `/groups` |
+| — | `/groups` | Home: lockup, group list, "Create group". ≥ lg: opens the last group (`groups/_home/desktop-home.tsx`) |
 | L0 | `/signin` | **New** (`app/(public)/signin`, placeholder now). Sign in / create account, `?next=` |
 | L10 | `/settings` | **New** (`app/(app)/settings`, placeholder now). Name, alerts, theme, privacy, sign out |
 | L1 | `/groups/new` | Group hero, name / description / `Stepper` min size (8, ≥ 5) + why-hint; primary "Create group" |
@@ -218,7 +220,7 @@ return (
   render an in-content h1 for ≥ lg (L0/L2 cards). L9 compact wants the top bar too (R8): render
   `<FocusedTopBar className="lg:hidden" />` instead of an `AppBar`.
 - `/p/[pollId]/**` doesn't name its group: call `useCurrentGroup(poll?.groupId)` so the sidebar marks it (and
-  desktop "/" can reopen it). `/g/[groupId]/**` is detected from the URL.
+  desktop `/groups` can reopen it). `/g/[groupId]/**` is detected from the URL.
 - After `createGroup`, `redeemInvite` or `leaveGroup`, call `useShell().refreshGroups()` so the sidebar
   list updates (and `forgetLastGroup(id)` after leaving).
 
@@ -281,7 +283,7 @@ await signIn();               // L0. Rejects PasskeyCancelledError | PasskeyNotF
 await signUp(displayName);    // L0 new account / L2 signed-out join (name asked once)
 await signOut();              // L10, then router.replace("/signin")
 await updateDisplayName(name);// L10 "Your name" (also renames the user on every admin roster)
-safeNextPath(searchParams.get("next")); // same-site path or "/" (open-redirect guard)
+safeNextPath(searchParams.get("next")); // same-site path or APP_HOME (open-redirect guard)
 signInHref(path);             // "/signin?next=…"
 ```
 

@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { APP_HOME } from "@/lib/routes";
 
 // Exactly per lihim-DESIGN.md → Export checklist (Next.js PWA).
 export default function manifest(): MetadataRoute.Manifest {
@@ -8,6 +9,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Anonymous polls for your group. Only members answer, once each.",
     theme_color: "#0A0B0D",
     background_color: "#0A0B0D",
+    // "/" is the landing page; the installed app opens on the groups home.
+    start_url: APP_HOME,
     display: "standalone",
     icons: [
       { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
