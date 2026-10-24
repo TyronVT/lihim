@@ -5,8 +5,10 @@
  */
 import { markAnswered } from "./answered";
 import { repo } from "./data";
+import { PasskeyCancelledError } from "./data/errors";
 import type { Poll } from "./data/types";
 import { env } from "./env";
+import { ensurePrfOutput, loadSdk } from "./identity";
 import { activeProverMode, isNotMemberError, proveVote, serializeForRelay, type ProverMode } from "./prover";
 import type { LihimProof } from "./proof";
 import { submitVote, type RelayOutcome } from "./relay";
@@ -23,7 +25,9 @@ export type VoteResult =
    * Couldn't build the proof. Nothing sent. `notMember`: the viewer's commitment isn't in
    * the poll's frozen member set (joined after it opened, or a different passkey).
    */
-  | { status: "prove_failed"; error: unknown; notMember: boolean };
+  | { status: "prove_failed"; error: unknown; notMember: boolean }
+  /** The passkey prompt (needed after a reload) was dismissed. Nothing happened. */
+  | { status: "cancelled" };
 
 export interface CastVoteOptions {
   onPhase?: (phase: VotePhase) => void;
@@ -46,6 +50,8 @@ const frozenSets = new Map<string, Promise<bigint[]>>();
 export function prefetchVoteInputs(poll: Pick<Poll, "id" | "chainPollId">, prover?: ProverMode): void {
   if (!poll.chainPollId || (prover ?? activeProverMode()) !== "sdk") return;
   frozenCommitments(poll.id);
+  // Warm the SDK so a passkey prompt on "Send answer" isn't delayed by a chunk download.
+  void loadSdk();
 }
 
 function frozenCommitments(pollId: string): Promise<bigint[]> {
@@ -69,6 +75,16 @@ export async function castVote(
     return { status: "prove_failed", error: new Error("Poll is not open"), notMember: false };
   }
   const mode = opts.prover ?? activeProverMode();
+
+  if (mode === "sdk") {
+    // After a reload this is the passkey prompt; it has to come first, straight from the tap.
+    try {
+      await ensurePrfOutput();
+    } catch (error) {
+      if (error instanceof PasskeyCancelledError) return { status: "cancelled" };
+      return { status: "prove_failed", error, notMember: false };
+    }
+  }
 
   opts.onPhase?.("proving");
   const slowTimer = setTimeout(() => opts.onSlow?.(), SLOW_PROVING_MS);

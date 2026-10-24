@@ -148,6 +148,10 @@ function VoteBody({ data, onReload }: { data: VoteData; onReload: () => void }) 
         case "not_sent":
           setStage({ kind: "failed", reason: result.status });
           break;
+        case "cancelled":
+          // Passkey prompt dismissed: back to picking, selection kept, nothing to report.
+          setStage({ kind: "idle" });
+          break;
       }
     } catch {
       // Only reached when aborted (screen left mid-answer): nothing to show.
@@ -353,7 +357,6 @@ function FailureNotice({ reason, onReload }: { reason: FailureReason; onReload: 
       />
     );
   }
-  // TODO(M0): stay quiet on a cancelled passkey prompt once passkeys exist.
   return (
     <Notice tone="warning" title={reason === "not_sent" ? copy.vote.notSent : copy.errors.generic}>
       {reason === "prove_failed" ? copy.vote.proveFailedBody : undefined}

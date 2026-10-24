@@ -10,15 +10,24 @@
  *
  * Sign in / sign up (P1) run the passkey ceremony in lib/passkey.ts against the `auth-passkey`
  * Edge Function; the PRF output from the same prompt goes to lib/identity.ts (setPrfOutput).
- * TODO(passkey): after a full reload the session is restored by supabase-js but prf_out is gone
- * (memory only) — identity.getPrfOutput still needs to re-prompt for the passkey in production.
+ * After a full reload supabase-js restores the session but prf_out is gone (memory only), so
+ * db() registers unlockPrf: one local passkey prompt, limited to the viewer's own passkeys.
+ * Actions that need a key call ensurePrfOutput() first, so the prompt follows the tap directly.
  */
 import { createClient, type PostgrestError, type SupabaseClient } from "@supabase/supabase-js";
 import type { AdminTxBody, LihimNetwork } from "@lihim/sdk";
 import { env } from "../env";
 import { toHex32 } from "../format";
-import { groupAdminKey, groupIdentity, loadSdk, setPrfOutput } from "../identity";
-import { passkeySignIn, passkeySignUp, type PasskeyResult } from "../passkey";
+import {
+  PasskeyRequiredError,
+  ensurePrfOutput,
+  groupAdminKey,
+  groupIdentity,
+  loadSdk,
+  setPrfOutput,
+  setPrfUnlocker,
+} from "../identity";
+import { passkeySignIn, passkeySignUp, passkeyUnlock, type OwnCredential, type PasskeyResult } from "../passkey";
 import type { LihimRepository } from "./index";
 import { ForbiddenError, InviteError, NotFoundError, PollClosingPassedError, PollNotOpenedError, SmallGroupError } from "./errors";
 import type {
@@ -50,12 +59,45 @@ function db(): SupabaseClient {
       throw new Error("NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are required for NEXT_PUBLIC_DATA=supabase");
     }
     client = createClient(env.supabaseUrl, env.supabaseAnonKey);
-    // prf_out must not outlive the session that unlocked it (shared devices).
-    client.auth.onAuthStateChange((event) => {
-      if (event === "SIGNED_OUT") setPrfOutput(null);
+    setPrfUnlocker(unlockPrf);
+    client.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_OUT") {
+        // prf_out must not outlive the session that unlocked it (shared devices).
+        setPrfOutput(null);
+        ownCredentials = null;
+      } else if (session && ownCredentials?.userId !== session.user.id) {
+        // Deferred: supabase-js must not be called from inside this callback.
+        setTimeout(() => void loadOwnCredentials().catch(() => undefined), 0);
+      }
     });
   }
   return client;
+}
+
+/**
+ * The viewer's passkeys, loaded when a session appears and kept in memory so the unlock prompt
+ * can open straight from a tap, with no fetch in between (Safari needs the gesture to be recent).
+ */
+let ownCredentials: { userId: string; credentials: OwnCredential[] } | null = null;
+
+async function loadOwnCredentials(): Promise<OwnCredential[]> {
+  const viewer = await uid();
+  const credentials = rowsOf(
+    await db().from("passkey_credentials").select("credential_id, transports").eq("user_id", viewer).returns<OwnCredential[]>(),
+  );
+  ownCredentials = { userId: viewer, credentials };
+  return credentials;
+}
+
+/** identity.ts's unlocker: prf_out again after a reload, from one of the viewer's own passkeys. */
+async function unlockPrf(): Promise<Uint8Array> {
+  const { data } = await db().auth.getSession();
+  const viewer = data.session?.user.id;
+  if (!viewer) throw new PasskeyRequiredError();
+  const cached = ownCredentials?.userId === viewer ? ownCredentials.credentials : [];
+  const credentials = cached.length > 0 ? cached : await loadOwnCredentials();
+  if (credentials.length === 0) throw new PasskeyRequiredError();
+  return passkeyUnlock(credentials);
 }
 
 function network(): LihimNetwork {
@@ -361,6 +403,7 @@ export const supabaseRepository: LihimRepository = {
   },
 
   async createGroup(input) {
+    await ensurePrfOutput();
     const viewer = await uid();
     const sdk = await loadSdk();
     // The browser picks groups.id: both per-group keys are derived from it (D1).
@@ -450,6 +493,7 @@ export const supabaseRepository: LihimRepository = {
   },
 
   async addPendingMembers(groupId) {
+    await ensurePrfOutput();
     const g = await requireAdmin(groupId);
     await queueOwnCommitment(groupId).catch(() => undefined);
     const pending = rowsOf(
@@ -596,6 +640,8 @@ export const supabaseRepository: LihimRepository = {
   },
 
   async redeemInvite(token) {
+    // The commitment queued below needs the identity; prompt now, while the tap is fresh.
+    await ensurePrfOutput();
     const viewer = await uid();
     const profile = await db().from("profiles").select("display_name").eq("id", viewer).maybeSingle();
     const displayName = ((profile.data?.display_name as string | undefined) ?? "").trim() || "Member";
@@ -626,6 +672,7 @@ export const supabaseRepository: LihimRepository = {
   },
 
   async createPoll(input) {
+    await ensurePrfOutput();
     const g = await requireAdmin(input.groupId);
     if (g.member_count < g.min_members) throw new SmallGroupError(g.member_count, g.min_members);
     const labels = optionLabelsFor(input.kind, input.optionLabels);
@@ -652,6 +699,7 @@ export const supabaseRepository: LihimRepository = {
   },
 
   async retryPoll(pollId) {
+    await ensurePrfOutput();
     const row = check(await db().from("polls").select(POLL_COLS).eq("id", pollId).maybeSingle<PollRow>());
     if (!row) throw new NotFoundError("Poll not found");
     const g = await requireAdmin(row.group_id);

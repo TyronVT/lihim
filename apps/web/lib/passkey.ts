@@ -232,6 +232,35 @@ export function passkeySignIn(): Promise<PasskeyResult> {
   });
 }
 
+/** A passkey of the signed-in user, as passkey_credentials stores it. */
+export interface OwnCredential {
+  /** base64url */
+  credential_id: string;
+  transports: string[];
+}
+
+/**
+ * Get prf_out back after a reload (the session survived, the PRF output didn't). Local only:
+ * no server challenge and nothing is sent, the assertion is discarded. Limited to the signed-in
+ * user's own passkeys, so another account's passkey synced to the same device (or a shared one)
+ * can't be picked and silently derive the wrong identities.
+ */
+export function passkeyUnlock(credentials: OwnCredential[]): Promise<Uint8Array> {
+  return mapErrors(async () => {
+    const sdk = await loadSdk();
+    const { prfOutput } = await sdk.getPrfOutput({
+      challenge: crypto.getRandomValues(new Uint8Array(new ArrayBuffer(32))),
+      allowCredentials: credentials.map((c) => ({
+        id: fromB64url(c.credential_id),
+        type: "public-key" as const,
+        transports: c.transports as AuthenticatorTransport[],
+      })),
+      userVerification: "required",
+    });
+    return prfOutput;
+  });
+}
+
 /**
  * Create the passkey and the account. Usually one prompt; authenticators that only report
  * `prf.enabled` at creation need a second get() prompt for the PRF output.

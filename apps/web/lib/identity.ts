@@ -6,9 +6,11 @@
  *   admin    = deriveAdminKey(prf_out, groups.id)             — "lihim/admin/" + uuid (D1)
  *
  * `prf_out` lives only in this module's memory for the tab's lifetime. It is never stored,
- * logged or sent anywhere.
+ * logged or sent anywhere. Sign in / sign up put it here; after a reload it is gone while the
+ * session survives, so the data layer registers an unlocker (setPrfUnlocker) that asks for the
+ * signed-in user's passkey again, once, the next time a key is needed.
  *
- * Passkey sign-in isn't built yet, so outside production this hands out a FIXED, PUBLIC,
+ * With no unlocker (the mock data layer), outside production this hands out a FIXED, PUBLIC,
  * DEV-ONLY PRF output (DEV_MOCK_PRF_OUTPUT below). Anyone can derive every identity from it:
  * it exists only so the mock data layer can include "the viewer" in a poll's frozen member set
  * and a real proof can be generated in the browser during development.
@@ -35,24 +37,52 @@ export class PasskeyRequiredError extends Error {
 }
 
 let prfOut: Uint8Array | null = null;
+let unlocker: (() => Promise<Uint8Array>) | null = null;
+let unlocking: Promise<Uint8Array> | null = null;
 
 const devPrfAllowed = () => process.env.NODE_ENV !== "production";
 
-/**
- * Called by the (future) passkey sign-in with the PRF output of the same biometric prompt.
- * TODO(M0): wire from the auth-passkey login flow (`getPrfOutput` from @lihim/sdk, with the
- * server challenge) once passkeys are built; clear on sign-out.
- */
+/** Set by passkey sign in / sign up with the PRF output of the same prompt; cleared on sign-out. */
 export function setPrfOutput(bytes: Uint8Array | null): void {
   prfOut = bytes ? bytes.slice() : null;
 }
 
-/** The in-memory PRF output, or the dev mock outside production. */
+/**
+ * How to get prf_out back when it's missing (after a reload): the data layer passes a function
+ * that runs a passkey prompt limited to the signed-in user's passkeys. It must reject with
+ * PasskeyRequiredError when nobody is signed in.
+ */
+export function setPrfUnlocker(fn: (() => Promise<Uint8Array>) | null): void {
+  unlocker = fn;
+}
+
+/**
+ * The in-memory PRF output; else one passkey prompt through the unlocker (concurrent callers
+ * share it); else the dev mock outside production.
+ */
 export async function getPrfOutput(): Promise<Uint8Array> {
   if (prfOut) return prfOut;
+  if (unlocker) {
+    unlocking ??= unlocker()
+      .then((bytes) => {
+        setPrfOutput(bytes);
+        return bytes.slice();
+      })
+      .finally(() => {
+        unlocking = null;
+      });
+    return unlocking;
+  }
   if (devPrfAllowed()) return DEV_MOCK_PRF_OUTPUT;
-  // TODO(M0): prompt for the passkey here (getPrfOutput from @lihim/sdk) instead of failing.
   throw new PasskeyRequiredError();
+}
+
+/**
+ * Call first thing in a tap handler that will need a key (vote, admin actions): Safari only
+ * shows a passkey prompt shortly after a user gesture, so prompt before any network round trip.
+ */
+export async function ensurePrfOutput(): Promise<void> {
+  await getPrfOutput();
 }
 
 let sdkPromise: Promise<typeof import("@lihim/sdk")> | null = null;
