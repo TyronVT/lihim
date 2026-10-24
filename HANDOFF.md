@@ -126,6 +126,17 @@ and broke browser auth with a 401. That key was deleted in Supabase. After any c
   `/settings` (and so Sign out); it is set on every signed-in screen except Settings. Desktop
   already had Settings in the sidebar.
 - `.mcp.json` points Claude Code's Supabase MCP at the project.
+- **English only, ASD-STE100** (`2acbc77`): all Tagalog/Taglish is gone from the UI copy, the
+  landing page, the demo data, the dev showcase and the design docs; "Lihim" is the only word that
+  is not English. All UI copy (`apps/web/lib/copy.ts`) and the landing page follow ASD-STE100:
+  one instruction per sentence, active voice, simple tenses, no contractions or idioms, one word
+  for one meaning ("answer", never "vote"). The rules are in the header of `copy.ts` and in
+  `lihim-DESIGN.md` → Voice and copy; keep new strings to them. The demo group "UP Sining" is now
+  "Art Guild" (invite token `art-2026`) in the mock data, `supabase/seed.sql` and the docs.
+- **Landing page facts** corrected in the same commit: the contracts are on Stellar testnet, the
+  minimum group size is configurable (5+ in the form), and the relay claim covers only its own
+  logs. The `notify` reminder text matches the app copy ("A poll closes in 2 hours: <group>");
+  the function is redeployed.
 
 ## Remaining work
 
@@ -143,8 +154,10 @@ and broke browser auth with a 401. That key was deleted in Supabase. After any c
      re-check by itself.
    - Members reach the chain only when the admin opens the Members screen; consider a reminder
      or sending on the group page.
-   - The "unsupported browser" notice only names phone browsers; desktop Brave/Firefox users
-     need a clearer pointer (desktop Safari or Chrome with Google Password Manager).
+   - The "unsupported browser" notice on sign-in now names desktop browsers too; the join screen's
+     notice (`copy.join.unsupported`) still names only phones.
+   - The English copy is longer than the Taglish it replaced. Check buttons, notices and the vote
+     screen on a phone for awkward wrapping (not checked visually).
 3. **M0 leftovers**: a tampered proof with a *valid* root on testnet (the scripted run only hit
    the root check), the exact RPC error strings, archival behaviour, and the remaining
    `TODO(M0)`s (`grep -rn "TODO(M0)" --exclude-dir=node_modules --exclude-dir=target .`). The
