@@ -5,6 +5,9 @@
     "moduleResolution": "NodeNext",
     "lib": ["ES2023"],
     "types": ["node"],
+    // Explicit, relative to this file: Vercel's builder compiles from another directory and
+    // otherwise can't find @types/node (TS2688). Covers both a standalone and a workspace install.
+    "typeRoots": ["./node_modules/@types", "../../node_modules/@types"],
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
