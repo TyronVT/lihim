@@ -108,7 +108,7 @@ export function JoinFlow({ token }: { token: string }) {
 
   return (
     <>
-      <AppBar title={copy.join.title} backHref={signedIn ? "/" : undefined} />
+      <AppBar title={copy.join.title} backHref={signedIn ? APP_HOME : undefined} />
       {loading ? (
         <Screen width="form">
           <div role="status" className={cn(LG_CARD, "items-center gap-4")}>

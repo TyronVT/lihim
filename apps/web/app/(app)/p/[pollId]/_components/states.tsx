@@ -12,7 +12,7 @@ import { APP_HOME } from "@/lib/routes";
 export function PollLoading({ title, width }: { title?: string; width?: ScreenWidth }) {
   return (
     <>
-      <AppBar title={title} backHref="/" />
+      <AppBar title={title} backHref={APP_HOME} settings />
       <Screen
         width={width}
         header={
@@ -41,7 +41,7 @@ export function PollLoading({ title, width }: { title?: string; width?: ScreenWi
 export function PollNotFound() {
   return (
     <>
-      <AppBar backHref="/" />
+      <AppBar backHref={APP_HOME} settings />
       <Screen className="pt-10" header={<ShellHeader title={copy.poll.title} />}>
         <EmptyState
           illustration="mark"
@@ -61,7 +61,7 @@ export function PollNotFound() {
 export function PollLoadError({ onRetry }: { onRetry: () => void }) {
   return (
     <>
-      <AppBar backHref="/" />
+      <AppBar backHref={APP_HOME} settings />
       <Screen header={<ShellHeader title={copy.poll.title} />}>
         <Notice
           tone="danger"

@@ -70,7 +70,7 @@ export function ResultsScreen({ pollId }: { pollId: string }) {
 
   return (
     <>
-      <AppBar title={copy.results.title} backHref={backHref} />
+      <AppBar title={copy.results.title} backHref={backHref} settings />
       <Screen
         header={
           <ShellHeader back={{ href: backHref, label: group?.name ?? copy.vote.backToGroup }} title={copy.results.title} />

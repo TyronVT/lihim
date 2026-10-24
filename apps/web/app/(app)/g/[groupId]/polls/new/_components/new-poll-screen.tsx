@@ -19,7 +19,7 @@ export function NewPollScreen({ groupId }: { groupId: string }) {
 
   return (
     <>
-      <AppBar title={copy.newPoll.title} backHref={backHref} />
+      <AppBar title={copy.newPoll.title} backHref={backHref} settings />
       <Screen
         width="form"
         header={

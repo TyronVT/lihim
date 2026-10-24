@@ -6,7 +6,7 @@ import { AppBar, Button, Icon, ListRow, Notice, Screen, Section, ShellHeader, Sw
 import { copy } from "@/lib/copy";
 import { disableAlerts, enableAlerts, useAlertsState } from "@/lib/alerts";
 import { DISPLAY_NAME_MAX, cleanDisplayName, displayNameError, signOut, updateDisplayName, useSession } from "@/lib/session";
-import { LANDING } from "@/lib/routes";
+import { APP_HOME, LANDING } from "@/lib/routes";
 
 /** Same cap as L0's name field. */
 
@@ -21,7 +21,7 @@ export function SettingsScreen() {
 
   return (
     <>
-      <AppBar title={copy.settings.title} backHref="/" />
+      <AppBar title={copy.settings.title} backHref={APP_HOME} />
       <Screen
         width="form"
         header={<ShellHeader title={copy.settings.title} context={name ? copy.settings.signedInAs(name) : undefined} />}

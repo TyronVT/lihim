@@ -71,7 +71,10 @@ export function GroupHome({ groupId }: { groupId: string }) {
     <>
       <AppBar
         title={title}
+        backHref={APP_HOME}
+        backLabel={copy.home.title}
         right={canLeave && <OverflowMenu label={copy.hub.groupOptions} items={[leaveItem]} />}
+        settings
       />
       {data ? (
         <HubScreen group={data} leaveItem={leaveItem} onLeave={() => setLeaveOpen(true)} />

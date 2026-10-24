@@ -55,7 +55,7 @@ export function MembersScreen({ groupId }: { groupId: string }) {
 
   return (
     <>
-      <AppBar title={copy.roster.title} backHref={backHref} />
+      <AppBar title={copy.roster.title} backHref={backHref} settings />
       <Screen
         withFooter={admin !== null}
         header={

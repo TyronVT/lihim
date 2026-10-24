@@ -22,6 +22,7 @@ import {
   useShell,
 } from "@/components";
 import { copy } from "@/lib/copy";
+import { APP_HOME } from "@/lib/routes";
 import { repo, type Group, type Invite } from "@/lib/data";
 import { useMutation } from "@/lib/data/hooks";
 import { formatWhen } from "@/lib/format";
@@ -143,7 +144,7 @@ function CreateForm({ onCreated }: { onCreated: (c: Created) => void }) {
 
   return (
     <>
-      <AppBar title={copy.createGroup.title} backHref="/" />
+      <AppBar title={copy.createGroup.title} backHref={APP_HOME} settings />
       <Screen
         withFooter
         width="form"
@@ -278,7 +279,7 @@ function Ready({ created }: { created: Created }) {
 
   return (
     <>
-      <AppBar title={copy.createGroup.title} backHref="/" />
+      <AppBar title={copy.createGroup.title} backHref={APP_HOME} settings />
       <Screen
         withFooter
         width="form"

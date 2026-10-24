@@ -209,7 +209,7 @@ function VoteBody({ data, onReload }: { data: VoteData; onReload: () => void }) 
 
   return (
     <>
-      <AppBar title={group?.name} backHref={backHref} />
+      <AppBar title={group?.name} backHref={backHref} settings />
       <Screen
         width="form"
         withFooter={!!primary}

@@ -9,12 +9,17 @@ import { HIDE_IN_SHELL_LG } from "./shell-classes";
 export interface AppBarProps {
   /** Screen title, `heading` size, truncated to one line. */
   title?: ReactNode;
-  /** Back target. Omit on top-level screens (home, L3 hub). */
+  /** Back target. Omit only on Home; the L3 hub goes back to APP_HOME (never "/", the landing page). */
   backHref?: string;
   /** Accessible label for the back link. Default "Back". */
   backLabel?: string;
   /** Right slot: icon buttons / overflow menu (keep ≥ 48 px targets). */
   right?: ReactNode;
+  /**
+   * Add a Settings (gear) link after `right`. Signed-in screens only: on compact/medium there is
+   * no tab bar, so this is how Settings and Sign out stay one tap away from anywhere.
+   */
+  settings?: boolean;
   /** Widen the inner container to 720 to align with `<Screen wide>`. */
   wide?: boolean;
   /**
@@ -30,7 +35,22 @@ export interface AppBarProps {
  * There's no global tab bar; this is the only navigation chrome on compact/medium. Inside a
  * shell it hides itself at ≥ lg — give the Screen a `header={<ShellHeader …/>}` for that size.
  */
-export function AppBar({ title, backHref, backLabel = copy.common.back, right, wide, keepOnDesktop, className }: AppBarProps) {
+export function AppBar({
+  title,
+  backHref,
+  backLabel = copy.common.back,
+  right,
+  settings,
+  wide,
+  keepOnDesktop,
+  className,
+}: AppBarProps) {
+  const trailing = (right || settings) && (
+    <div className="flex shrink-0 items-center gap-1 pr-1">
+      {right}
+      {settings && <AppBarAction label={copy.shell.settings} icon="settings" href="/settings" />}
+    </div>
+  );
   return (
     <header className={cn("sticky top-0 z-30 bg-bg pt-[env(safe-area-inset-top)]", !keepOnDesktop && HIDE_IN_SHELL_LG, className)}>
       <div
@@ -50,7 +70,7 @@ export function AppBar({ title, backHref, backLabel = copy.common.back, right, w
           </Link>
         )}
         <h1 className="min-w-0 flex-1 truncate text-heading text-text-1">{title}</h1>
-        {right && <div className="flex shrink-0 items-center gap-1 pr-1">{right}</div>}
+        {trailing}
       </div>
     </header>
   );

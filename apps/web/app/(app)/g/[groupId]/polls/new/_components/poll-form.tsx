@@ -242,7 +242,7 @@ export function PollForm({ group, backHref }: { group: Group; backHref: string }
 
   return (
     <>
-      <AppBar title={t.title} backHref={backHref} />
+      <AppBar title={t.title} backHref={backHref} settings />
       <Screen
         withFooter
         width="form"
