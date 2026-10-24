@@ -283,8 +283,9 @@ depth }`) and `Nullifier(caller, id, nullifier)`. Polls has `Poll(id)`, `Tally(i
 `Voters(id)` and `Nonce(group_id)`. Config (the contract addresses, the
 counters and `min_members`) lives in instance storage.
 
-Every write extends the entry to about 120 days when it has fewer than
-about 30 days left. The keeper should call `bump_group` and `bump_keys`
+Every write extends the entry to about 14 days when it has fewer than
+about 7 days left (120 days made `create_group` cost ~478 XLM in rent on
+testnet, above the per-transaction fee cap). The keeper should call `bump_group` and `bump_keys`
 (with the leaves and nullifiers it has indexed from events) for active
 groups (`caller` = the polls address for vote nullifiers), `bump_poll` for
 open polls, and `verifier.bump()`. The ledger keys for a direct

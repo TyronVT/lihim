@@ -38,12 +38,17 @@ pub const FP_MODULUS_BE: [u8; 32] = [
 
 /// Ledgers per day at ~5s close time.
 pub const DAY_IN_LEDGERS: u32 = 17_280;
-/// Persistent entries are extended to ~120 days whenever they drop below ~30
+/// Persistent entries are extended to ~14 days whenever they drop below ~7
 /// days. Groups can sit idle between polls for months, and an archived
 /// nullifier entry must never be mistaken for an absent one, so we bump on
-/// every write and the keeper bumps the rest.
-pub const BUMP_AMOUNT: u32 = 120 * DAY_IN_LEDGERS;
-pub const BUMP_THRESHOLD: u32 = 30 * DAY_IN_LEDGERS;
+/// every write and the daily keeper bumps the rest.
+///
+/// Kept short because every write pays rent for the whole extension up front:
+/// at 120 days, `create_group` alone needed ~478 XLM on testnet (2026-10-24),
+/// above the per-transaction fee cap. TODO(M0): measure mainnet rent and pick
+/// the production value; the keeper's KEEPER_EXTEND_TO_LEDGERS must match.
+pub const BUMP_AMOUNT: u32 = 14 * DAY_IN_LEDGERS;
+pub const BUMP_THRESHOLD: u32 = 7 * DAY_IN_LEDGERS;
 
 // ---------------------------------------------------------------------------
 // Shared contract types

@@ -604,9 +604,11 @@ contracts used there are fixed: semaphore `CAAQC…C526`, polls
 
 ### TTL policy
 
-- Every write extends the entry to `BUMP_AMOUNT` = 120 days (2,073,600
-  ledgers) whenever it has less than `BUMP_THRESHOLD` = 30 days (518,400
-  ledgers) left. The same applies to the instance on most calls.
+- Every write extends the entry to `BUMP_AMOUNT` = 14 days (241,920
+  ledgers) whenever it has less than `BUMP_THRESHOLD` = 7 days (120,960
+  ledgers) left. The same applies to the instance on most calls. Rent for
+  the whole extension is paid by the writing transaction, which is why it is
+  short (120 days priced `create_group` above the fee cap on testnet).
 - The keeper has two options per entry. One is the contract hooks
   (`semaphore.bump_group`, `semaphore.bump_keys(LIHIM_POLLS_ID, gid, leaves,
   nullifiers)`, `polls.bump_poll`, `verifier.bump()`), which are cheap to

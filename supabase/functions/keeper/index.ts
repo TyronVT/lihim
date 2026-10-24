@@ -39,10 +39,10 @@ import {
   verifierKeys,
 } from '../_shared/storage_keys.ts';
 
-// ~17,280 ledgers/day at 5 s. Extend to ~120 days whenever under ~30 days left
+// ~17,280 ledgers/day at 5 s. Extend to ~14 days whenever under ~7 days left
 // (the contracts' own BUMP_AMOUNT / BUMP_THRESHOLD).
-const EXTEND_TO = Number(optionalEnv('KEEPER_EXTEND_TO_LEDGERS', String(17_280 * 120)));
-const THRESHOLD = Number(optionalEnv('KEEPER_THRESHOLD_LEDGERS', String(17_280 * 30)));
+const EXTEND_TO = Number(optionalEnv('KEEPER_EXTEND_TO_LEDGERS', String(17_280 * 14)));
+const THRESHOLD = Number(optionalEnv('KEEPER_THRESHOLD_LEDGERS', String(17_280 * 7)));
 // Keeps each tx's footprint well under the per-tx read-entry limit.
 const KEYS_PER_TX = 20;
 // Polls closed within this window still get their entries extended (L9 reads them).
