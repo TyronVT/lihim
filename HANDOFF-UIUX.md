@@ -238,7 +238,7 @@ Supabase session (implemented, not throwing; untested against a live project):
 - `signIn()`, `signUp(displayName)`, `signOut()`, `updateDisplayName(name)` — use them via lib/session.
 - `getMembers(groupId, {includeRemoved?: boolean})`: active members (admin first), then status "removed".
 - `countPendingMembers(groupId): Promise<number>` (admin).
-  - Mock: 3 in UP Sining. addPendingMembers then takes ~2.5 s, returns 3, and returns 0 afterwards.
+  - Mock: 3 in Art Guild. addPendingMembers then takes ~2.5 s, returns 3, and returns 0 afterwards.
 - `leaveGroup(groupId): Promise<void>`
   - Member only; ForbiddenError for the admin.
   - Off-chain, same limitation as D5: the leaf stays and answers stay counted. Rejoin needs a new invite.
@@ -255,9 +255,9 @@ Type changes:
 - New: `GetMembersOptions`, `ActiveInvite`, `PollOpenState`.
 
 Mock seed:
-- UP Sining poll_draft = failed ("Officer evaluation: Treasurer").
+- Art Guild poll_draft = failed ("Officer evaluation: Treasurer").
 - New poll_opening = pending, stays pending.
-- 2 removed members; invite sining-2026 shows 12 of 50.
+- 2 removed members; invite art-2026 shows 12 of 50.
 
 Supabase migration supabase/migrations/20261023000000_lifecycle.sql (RLS'd security-definer RPCs, admin/self checks):
 - `poll_open_states(group_id)`: pending, or failed when the last create_poll tx failed, is missing, or has been in flight > 10 min.

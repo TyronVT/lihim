@@ -67,7 +67,7 @@ Severity: **High** = blocks a use case or risks a wrong, permanent action.
 | R10 | Medium | L3 poll cards | The status pill on the right squeezes the title and meta: at 360 px "Rate the GA last Friday" and "16 of 31 members answered" both wrap. | Pill moves into the meta row; title gets full width |
 | R11 | Medium | L2 invalid invite (X1) | The only action is "Your groups", which is wrong for a signed-out visitor holding a dead link. | Action depends on session (L2 spec) |
 | R12 | Medium | Settings | The theme picker sits at the bottom of the privacy explainer (L8). There's no home for alerts, name or sign-out. | L10 Settings |
-| R13 | Low | L6 proving | The label shows Tagalog and English stacked ("Pinapatunayang member ka… / Proving you're a member…"). Two lines of the same message in the calmest moment of the app. | One string |
+| R13 | Low | L6 proving | The label shows the same message two times, in two languages, one above the other. Two lines of the same message in the calmest moment of the app. | One string |
 | R14 | Low | Every screen | "Who can see what" is a small, icon-less text link floating at the bottom. It's the app's main trust promise. | Consistent footer row with `eye-off` icon; sidebar item on desktop |
 | R15 | Low | L7 open + hidden | "Every vote verified" shows while the poll is open, and links to L9, which only covers closed polls. | Hide badge until closed; show "Check the count when it closes" |
 | R16 | Low | Home | Doesn't say who is signed in. | Account row in L10 and desktop sidebar |
@@ -75,7 +75,7 @@ Severity: **High** = blocks a use case or risks a wrong, permanent action.
 What works and must survive the desktop work: the calm proving → recorded
 sequence on L6, the blocked small-group state on L5, the "Only you see this
 list" note on L4, the turnout framing on L7, the hash chips on L9, and the
-Taglish microcopy.
+plain microcopy (English, ASD-STE100; see lihim-DESIGN.md → Voice and copy).
 
 ---
 
@@ -100,10 +100,10 @@ Use Tailwind's `md` (768), `lg` (1024) and `xl` (1280). Design and test at 360,
 ```
 Expanded (≥1024)
 ┌────────────────┬──────────────────────────────────────────────────────────┐
-│ ◐ Lihim        │  UP Sining                              [ New poll ]     │ ← page header
+│ ◐ Lihim        │  Art Guild                              [ New poll ]     │ ← page header
 │                │  31 members · You're the admin                           │   (title, context,
 │ YOUR GROUPS    ├──────────────────────────────────────────────────────────┤    one primary action)
-│ ▌UP Sining   2 │                                                          │
+│ ▌Art Guild   2 │                                                          │
 │  Phase 2 HOA 1 │   main column                     │  right rail (≥1280)  │
 │  BS Psych 3-B  │   max 720                         │  320                 │
 │ + New group    │                                   │                      │
@@ -231,7 +231,7 @@ Compact: as today, plus:
 - Group rows: name; meta "31 members · 2 open polls"; role chip "Admin" moved
   to the trailing side. A group with open polls shows the count as a small
   `--text-1` badge so it reads at a glance.
-- Empty state (no groups): Group illustration 96, "Wala ka pang group",
+- Empty state (no groups): Group illustration 96, "You are not in a group",
   body "Join with an invite link from your group admin, or start one.",
   primary "Create group".
 - Footer row: "Who can see what" (R14) and "Settings".
@@ -299,7 +299,7 @@ Opening row (P6):
 - Failed: "Didn't open" in `--danger` + icon, action "Try again" (re-signs and
   resends with the same id), and `⋯` → "Discard".
 
-Leave group (P3) confirm sheet: title "Leave UP Sining?", body "You'll stop
+Leave group (P3) confirm sheet: title "Leave Art Guild?", body "You'll stop
 getting its polls. Answers you already gave stay counted and stay anonymous.
 To rejoin you'll need a new invite link." Destructive button "Leave group".
 *(Same on-chain limitation as D5: the leaf stays; copy must not promise more.)*
@@ -308,7 +308,7 @@ Expanded:
 
 ```
 ┌ page header ─────────────────────────────────────────────────────────────┐
-│ UP Sining                                  [Invite link] [ New poll ]    │
+│ Art Guild                                  [Invite link] [ New poll ]    │
 │ 31 members · You're the admin                                            │
 ├──────────────────────────────────────────────┬───────────────────────────┤
 │ Open polls                                   │ ◎  31 members             │
@@ -316,8 +316,8 @@ Expanded:
 │ │ Rate the GA last Friday                  │ │ [ Manage members ]        │
 │ │ ◷ Closing soon · Today 10:00 AM · 16/31  │ │                           │
 │ └──────────────────────────────────────────┘ │ About                     │
-│ ┌──────────────────────────────────────────┐ │ Org ng mga visual artists │
-│ │ Saan tayo mag-retreat this sem?          │ │ sa UP Diliman…            │
+│ ┌──────────────────────────────────────────┐ │ The visual artists of UP  │
+│ │ Where do we go for the retreat?          │ │ Diliman. We decide here…  │
 │ │ ● Open · Sun 11:00 AM · 20/31            │ │                           │
 │ └──────────────────────────────────────────┘ │ Minimum size 8            │
 │ Past results                                 │ ⊘ Who can see what        │
@@ -358,7 +358,7 @@ Expanded: table.
 
 ```
 ┌ page header ──────────────────────────────────────────────────────────────┐
-│ ← UP Sining    Members                              [ Invite members ]    │
+│ ← Art Guild    Members                              [ Invite members ]    │
 │ 31 members · Only you see this list. Members see the count only.          │
 ├───────────────────────────────────────────────────────────────────────────┤
 │ [/ Find a member            ]                                  31 active   │
@@ -399,12 +399,12 @@ Expanded: two columns, no review sheet (the preview does that job).
 
 ```
 ┌ page header ──────────────────────────────────────────────────────────────┐
-│ ← UP Sining    New poll                                   [ Open poll ]   │
+│ ← Art Guild    New poll                                   [ Open poll ]   │
 ├────────────────────────────────────────┬──────────────────────────────────┤
 │ Poll type  [Single choice|Yes–No|1–5]  │ WHAT MEMBERS WILL SEE            │
 │ Question                               │ ┌──────────────────────────────┐ │
-│ [ Saan tayo mag-retreat this sem?   ]  │ │ ● Open · Closes Mon 6:00 AM  │ │
-│ Options                                │ │ Saan tayo mag-retreat…       │ │
+│ [ Where do we go for the retreat?   ]  │ │ ● Open · Closes Mon 6:00 AM  │ │
+│ Options                                │ │ Where do we go for the ret…  │ │
 │ [ Tagaytay ]  [ Baguio ]  + Add option │ │ ⊘ Anonymous to the group…    │ │
 │ Closing time  [1 day|3 days|1 week|…]  │ │ ○ Tagaytay                   │ │
 │ ◷ Closes Mon, 6:00 AM                  │ │ ○ Baguio                     │ │
@@ -437,7 +437,7 @@ Flow (P4):
 | Recorded | Poll illustration fades in, `--success` check, "Recorded anonymously". Primary becomes "See results". |
 | Already answered (X2) | `--danger` card "You've already answered this poll." + "Each member answers once. Your answer was counted — nobody can see what it was." Primary "See results". |
 | Joined after it opened (X2) | Card "You weren't a member when this poll opened, so you can't answer it." No primary; text link "Back to group". |
-| Rejected / network | "Hindi na-send. Check your connection and try again — wala pang na-record." Button returns to "Send answer" with the selection kept. |
+| Rejected / network | "Lihim did not send your answer. Nothing is recorded. Check your connection and try again." Button returns to "Send answer" with the selection kept. |
 | Closed | Redirect to L7. |
 
 Accessibility: options are a radiogroup; the button is outside it. Live region
@@ -465,10 +465,10 @@ Expanded:
 
 ```
 ┌ page header ──────────────────────────────────────────────────────────────┐
-│ ← UP Sining    Results                                                    │
+│ ← Art Guild    Results                                                    │
 ├────────────────────────────────────────────┬──────────────────────────────┤
 │ Closed · Oct 14                            │ Turnout                      │
-│ Approve ba ang financial report ng 1st sem?│ 23 of 31 members answered    │
+│ Do you approve the first-term report?      │ 23 of 31 members answered    │
 │ Yes                                        │ ▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▭▭▭▭    │
 │ 17 of 23 answers · 74%                     │                              │
 │                                            │ [⛉ Every vote verified]      │
@@ -520,8 +520,8 @@ Expanded (focused shell, max 960):
 
 ```
 ┌ ◐ Lihim ─────────────────────────────────────────── Who can see what ──────┐
-│ Approve ba ang financial report ng 1st sem?                                │
-│ UP Sining · This page recounts a Lihim poll from the public record.        │
+│ Do you approve the first-term report?                                      │
+│ Art Guild · This page recounts a Lihim poll from the public record.        │
 │ ┌─────────────┬──────────────┬─────────────┬────────────────────────────┐  │
 │ │ Closed      │ Members at   │ Answers     │ Member list fingerprint    │  │
 │ │ Oct 14 5 AM │ open  31     │ 23          │ [0x0194ad58…c2954a38 ⧉]    │  │

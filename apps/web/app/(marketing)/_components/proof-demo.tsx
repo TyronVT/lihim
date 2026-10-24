@@ -104,11 +104,11 @@ export function ProofDemo() {
   const rootLit = view === "chain" ? shown : step >= DEPTH;
 
   const status: Record<Phase, string> = {
-    idle: "Pick an answer, then prove you’re a member.",
-    climbing: "Hashing your way up the tree with Poseidon…",
-    proving: "Building the Groth16 proof in the browser…",
-    accepted: "Accepted. Proof checked on-chain, nullifier stored.",
-    rejected: "Rejected. That nullifier is already used: this member already answered this poll.",
+    idle: "Select an answer. Then prove that you are a member.",
+    climbing: "Hashing up the tree with Poseidon…",
+    proving: "The browser builds the Groth16 proof…",
+    accepted: "Accepted. The chain checked the proof and kept the nullifier.",
+    rejected: "Rejected. The chain has this nullifier. This member answered this poll before.",
   };
 
   return (
@@ -126,7 +126,7 @@ export function ProofDemo() {
             className="w-full sm:w-auto"
           />
           <span className="text-caption text-text-3">
-            {view === "device" ? "Only you see the highlighted leaf." : "Everyone sees all 8. Nobody sees which."}
+            {view === "device" ? "Only you see the highlighted leaf." : "All people see the 8 leaves. Nobody sees which leaf is yours."}
           </span>
         </div>
 
@@ -221,7 +221,7 @@ export function ProofDemo() {
             loadingLabel={phase === "climbing" ? "Climbing the tree…" : "Proving…"}
             icon="verified"
           >
-            {phase === "accepted" || phase === "rejected" ? "Try to answer again" : "Prove I’m a member"}
+            {phase === "accepted" || phase === "rejected" ? "Try to answer again" : "Prove that I am a member"}
           </Button>
           <Button variant="secondary" onClick={newMember} disabled={busy} icon="anonymous">
             Be someone else
@@ -247,7 +247,7 @@ export function ProofDemo() {
       <div className="flex flex-col gap-4">
         <Panel
           title="Public signals"
-          caption="Sent with the proof. Anyone can read these on Stellar."
+          caption="These go with the proof. Anyone can read them on Stellar."
         >
           <Signal name="merkleTreeRoot" value={signals.root} shown={shown} />
           <Signal name="nullifier" value={signals.nullifier} shown={shown} note="Poseidon(scope, secret)" />
@@ -267,7 +267,7 @@ export function ProofDemo() {
 
         <Panel
           title="Private inputs"
-          caption={view === "device" ? "Stay on your phone. Never sent, never stored." : "Not in the transaction. The chain never sees them."}
+          caption={view === "device" ? "These stay on your phone. Lihim never sends them and never keeps them." : "These are not in the transaction. The chain never sees them."}
         >
           <Signal name="secretScalar" value={secret} shown={view === "device"} />
           <Signal name="leaf index" value={null} text={String(you)} shown={view === "device"} />
@@ -287,7 +287,7 @@ export function ProofDemo() {
 }
 
 function treeLabel(view: View, you: number, step: number, phase: Phase) {
-  if (view === "chain") return "Merkle tree of 8 member commitments. The chain sees only the root; no leaf is marked.";
+  if (view === "chain") return "Merkle tree of 8 member commitments. The chain sees only the root. No leaf has a mark.";
   const where = step >= DEPTH ? "The path from your leaf to the root is highlighted." : "";
   return `Merkle tree of 8 member commitments. Your leaf is number ${you + 1}. ${where} Status: ${phase}.`;
 }

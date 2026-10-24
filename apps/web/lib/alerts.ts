@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Poll alerts on this device (P2): "New poll in UP Sining", "Poll closes in 2 hours — UP Sining".
+ * Poll alerts on this device (P2): "New poll in Art Guild", "A poll closes in 2 hours: Art Guild".
  * Every member of a group gets the same alerts (never per-voter; there is no "you haven't
  * voted" path and must not look like there is one).
  *

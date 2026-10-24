@@ -10,7 +10,7 @@ export interface ShellHeaderProps {
   context?: ReactNode;
   /** Optional 64 px illustration before the title block (e.g. L8's Mark). */
   illustration?: ReactNode;
-  /** Child pages (L4–L7): link back to the parent, labelled with its name ("UP Sining"). */
+  /** Child pages (L4–L7): link back to the parent, labelled with its name ("Art Guild"). */
   back?: { href: string; label: ReactNode };
   /**
    * THE primary action the PinnedFooter holds on compact (still one primary per screen), plus

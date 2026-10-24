@@ -462,13 +462,13 @@ being written, not on RLS.
 | L5 | Create poll | Kind, options, closing time, "hide results until closing" toggle; blocked below min size with an explanation |
 | L6 | Vote | One tap → "Proving you're a member…" (≈1 s) → "Recorded anonymously" |
 | L7 | Results | Tally, turnout (23 of 31), "every vote verified" badge, link to L9 |
-| L8 | Privacy explainer | Plain Taglish: who can see what (admin sees members, nobody sees votes, small-group warning) |
+| L8 | Privacy explainer | Plain English: who can see what (admin sees members, nobody sees votes, small-group warning) |
 | L9 | Verify this poll (public) | Frozen root, member count, each nullifier + choice, recomputed tally, no names |
 
 Copy rules: no crypto words ("Recorded" not "on-chain", "Verified member" not
-"ZK proof"). Taglish microcopy is fine. Mobile-first at 360 px.
+"ZK proof"). Microcopy is English only, written to ASD-STE100. Mobile-first at 360 px.
 
-Reminders: PWA push for "New poll in UP Sining" and "Poll closes in 2 hours".
+Reminders: PWA push for "New poll in Art Guild" and "Poll closes in 2 hours".
 Notifications go to all members equally; never "you haven't voted yet" (that
 would reveal the server tracks who voted — it doesn't, and it mustn't look
 like it does).

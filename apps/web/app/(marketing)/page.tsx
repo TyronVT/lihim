@@ -14,7 +14,7 @@ import { APP_HOME, LANDING } from "@/lib/routes";
 export const metadata: Metadata = {
   title: { absolute: `${copy.brand.name} — ${copy.brand.tagline}` },
   description:
-    "Anonymous polls for small groups, verified on Stellar with Semaphore V4 zero-knowledge proofs. Only members answer, once each, and nobody can tell who said what.",
+    "Anonymous polls for groups, verified on Stellar with Semaphore V4 zero-knowledge proofs. Only members can answer, and each member answers one time. Nobody can see who gave which answer.",
 };
 
 const WRAP = "mx-auto w-full max-w-[1120px] px-4 sm:px-8";
@@ -50,12 +50,10 @@ export default function WelcomePage() {
               <span className={styles.veil}>really</span> <Words text="think." start={4} />
             </h1>
             <p className={cn(styles.lede, "mt-6 max-w-[56ch] text-text-2")}>
-              Only members can answer. Each person answers once. Not even the admin can tell who said what, and
-              anyone can recount the result.
+              Only members can answer. Each member answers one time. Nobody can see who gave which answer. This
+              includes the admin. Anyone can count the answers again.
             </p>
-            <p className="mt-3 text-caption text-text-3 italic" lang="tl">
-              {copy.brand.taglineTl}
-            </p>
+            <p className="mt-3 text-caption text-text-3 italic">{copy.brand.tagline}</p>
             <div className="mt-10 flex w-full max-w-[420px] flex-col gap-3 sm:flex-row">
               <Button asChild icon="arrowRight">
                 <Link href={APP_HOME}>Open Lihim</Link>
@@ -68,17 +66,17 @@ export default function WelcomePage() {
               <Fact value="≈ 1 s" label="to prove, in your browser" />
               <Fact value="0" label="names or emails on-chain" />
               <Fact value="1" label="answer per member per poll" />
-              <Fact value="8+" label="members before a poll opens" />
+              <Fact value="5+" label="members before a poll opens" />
             </dl>
           </div>
         </Hero>
 
         <Ticker />
 
-        <Section id="problem" overline="The problem" title="Every group poll today breaks one way or another.">
+        <Section id="problem" overline="The problem" title="Other group polls fail in one way or another.">
           <Reveal className="mt-10 overflow-x-auto rounded-lg border border-border bg-surface shadow-raised">
             <table className="w-full min-w-[620px] text-left text-label">
-              <caption className="sr-only">How Lihim compares with anonymous and login-required forms</caption>
+              <caption className="sr-only">A comparison of Lihim with anonymous forms and forms that need a login</caption>
               <thead>
                 <tr className="border-b border-border text-text-2">
                   <th scope="col" className="px-4 py-4 font-medium">
@@ -98,15 +96,15 @@ export default function WelcomePage() {
               <tbody>
                 <Row need="Only members can answer" cells={[false, true, true]} />
                 <Row need="One answer per person" cells={[false, true, true]} />
-                <Row need="Nobody sees who said what" cells={[true, false, true]} />
-                <Row need="Anyone can recount the result" cells={[false, false, true]} />
-                <Row need="Outsiders can’t flood it" cells={[false, true, true]} last />
+                <Row need="Nobody sees who gave which answer" cells={[true, false, true]} />
+                <Row need="Anyone can count the answers again" cells={[false, false, true]} />
+                <Row need="Outside people cannot add answers" cells={[false, true, true]} last />
               </tbody>
             </table>
           </Reveal>
         </Section>
 
-        <Section id="how" overline="How it works" title="Five steps. You only notice one tap.">
+        <Section id="how" overline="How it works" title="Five steps. You see only one touch.">
           <ol className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
             {STEPS.map((s, i) => (
               <Reveal as="li" key={s.title} delay={i * 80} className="flex">
@@ -127,7 +125,7 @@ export default function WelcomePage() {
           id="zk"
           overline="The zero-knowledge part"
           title="Semaphore V4, running on Soroban."
-          intro="Lihim uses Semaphore V4, PSE’s anonymous-signalling protocol: a Groth16 proof over the BN254 curve that says “I know the secret behind one of the commitments in this group’s Merkle tree, and here is my one-time nullifier for this poll.” It never says which commitment. Try it."
+          intro="Lihim uses Semaphore V4, the anonymous-signalling protocol from PSE. Each answer comes with a Groth16 proof over the BN254 curve. The proof says: “I know the secret of one commitment in the Merkle tree of this group. This is my one-time nullifier for this poll.” The proof does not say which commitment. Try it below."
         >
           <Reveal className="mt-10">
             <ProofDemo />
@@ -135,9 +133,9 @@ export default function WelcomePage() {
 
           <h3 className="mt-20 text-title">The algorithm, step by step</h3>
           <p className="mt-2 max-w-[64ch] text-text-2">
-            Same circuits, verification keys and JS libraries as upstream Semaphore V4. What Lihim adds is the Stellar
-            side: Poseidon and the LeanIMT in a Soroban contract, a Groth16 verifier on Stellar’s native BN254 host
-            functions, and nullifier storage.
+            Lihim uses the same circuits, verification keys and JS libraries as upstream Semaphore V4. Lihim adds
+            the Stellar part: Poseidon and the LeanIMT in a Soroban contract, a Groth16 verifier on the native BN254
+            host functions of Stellar, and storage for nullifiers.
           </p>
           <ol className="mt-8 grid grid-cols-1 gap-3 md:grid-cols-2">
             {ALGORITHM.map((a, i) => (
@@ -162,29 +160,29 @@ export default function WelcomePage() {
                 tone="yes"
                 title="What the proof guarantees"
                 items={[
-                  "The answer came from someone in the group’s member tree.",
-                  "Each member answers each poll once (one nullifier per poll).",
-                  "Your answers in different polls and groups can’t be linked to each other.",
-                  "Every counted answer passed the same on-chain check, so anyone can recount.",
+                  "The answer came from a member in the member tree of the group.",
+                  "Each member answers each poll one time (one nullifier for each poll).",
+                  "Nobody can connect your answers in different polls and groups.",
+                  "Each counted answer passed the same on-chain check. Thus, anyone can count the answers again.",
                 ]}
               />
             </Reveal>
             <Reveal delay={80}>
               <Honest
                 tone="no"
-                title="What it doesn’t do"
+                title="What the proof does not do"
                 items={[
-                  "Decide who counts as a member. That’s the group admin’s job.",
-                  "Hide that you joined. The admin sees the member list, just never the answers.",
-                  "Make a group of 3 anonymous. That’s why polls need 8+ members to open.",
-                  "Hide a running tally from the chain. Live results are hidden in the app only.",
+                  "Decide who is a member. The group admin decides this.",
+                  "Hide that you joined. The admin sees the member list. The admin never sees the answers.",
+                  "Make a group of 3 people anonymous. For this reason, each group has a minimum size before a poll can open.",
+                  "Hide the live count from the chain. Lihim hides live results only in the app.",
                 ]}
               />
             </Reveal>
           </div>
         </Section>
 
-        <Section id="stack" overline="Built with" title="The technology underneath.">
+        <Section id="stack" overline="Built with" title="The technology.">
           <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {STACK.map((g, i) => (
               <Reveal key={g.title} delay={(i % 3) * 80} className="flex">
@@ -210,7 +208,7 @@ export default function WelcomePage() {
           </div>
         </Section>
 
-        <Section id="rules" overline="House rules" title="Things Lihim will never do.">
+        <Section id="rules" overline="Rules" title="Lihim will never do these things.">
           <ul className="mt-10 grid gap-3 md:grid-cols-3">
             {RULES.map((r, i) => (
               <Reveal as="li" key={r.title} delay={i * 80}>
@@ -226,9 +224,9 @@ export default function WelcomePage() {
         <section className="border-t border-border">
           <Reveal className={cn(WRAP, "flex flex-col items-center py-24 text-center")}>
             <Illustration name="verified" size={96} />
-            <h2 className={cn(styles.h2, "mt-8 max-w-[20ch]")}>Your group already knows the answer. Let them say it.</h2>
+            <h2 className={cn(styles.h2, "mt-8 max-w-[20ch]")}>Your group knows the answer. Let the members say it.</h2>
             <p className={cn(styles.lede, "mt-4 max-w-[48ch] text-text-2")}>
-              Start a group, share one invite link, and ask the question nobody asks out loud.
+              Create a group. Share one invite link. Ask the question that nobody asks aloud.
             </p>
             <div className="mt-10 flex w-full max-w-[420px] flex-col gap-3 sm:flex-row">
               <Button asChild icon="createGroup">
@@ -315,7 +313,7 @@ function Ticker() {
   return (
     <div
       className={cn(styles.ticker, "overflow-hidden border-y border-border bg-surface py-3")}
-      aria-label="Example of what anyone can read on-chain: verified answers, no names"
+      aria-label="An example of what anyone can read on-chain: verified answers, and no names"
       role="img"
     >
       <div className={styles.tickerTrack} aria-hidden="true">
@@ -399,8 +397,8 @@ function Footer() {
       <div className={cn(WRAP, "flex flex-col gap-6 py-10 sm:flex-row sm:items-center sm:justify-between")}>
         <Lockup markSize={28} tagline={copy.brand.tagline} />
         <p className="max-w-[44ch] text-caption text-text-3">
-          In development: contracts run in local tests and are not yet on Stellar testnet. Lihim never moves money and
-          puts no names on-chain.
+          In development: the contracts run on Stellar testnet. Lihim never moves money. Lihim puts no names
+          on-chain.
         </p>
       </div>
     </footer>
@@ -413,27 +411,27 @@ const STEPS: { icon: IconName; title: string; body: string }[] = [
   {
     icon: "passkey",
     title: "Join with a passkey",
-    body: "Open the invite, use Face ID or your fingerprint. No password, no wallet, no seed phrase.",
+    body: "Open the invite. Use Face ID or your fingerprint. You do not need a password, a wallet or a seed phrase.",
   },
   {
     icon: "members",
-    title: "Get a secret per group",
-    body: "Your phone derives a fresh identity for this group and adds only its public commitment to the tree.",
+    title: "Get a secret for each group",
+    body: "Your phone derives a new identity for this group. Only its public commitment goes into the tree.",
   },
   {
     icon: "verified",
-    title: "Prove, don’t tell",
-    body: "When you answer, your browser builds a zero-knowledge proof that you’re a member. About a second.",
+    title: "Prove, do not tell",
+    body: "When you answer, your browser builds a zero-knowledge proof that you are a member. This takes about one second.",
   },
   {
     icon: "send",
     title: "A relay sends it",
-    body: "A relay with no cookies and no IP logs submits it, so no Stellar account is tied to you.",
+    body: "A relay sends the answer for you. The relay uses no cookies and writes no IP addresses to its logs. No Stellar account is connected to you.",
   },
   {
     icon: "results",
-    title: "Anyone can recount",
-    body: "Stellar checks the proof and stores the nullifier. The public verify page recounts from chain data.",
+    title: "Anyone can count again",
+    body: "Stellar checks the proof and keeps the nullifier. The public verify page counts the answers again from chain data.",
   },
 ];
 
@@ -443,24 +441,24 @@ const ALGORITHM: { title: string; math: string; body: string }[] = [
     math: `prf  = WebAuthn-PRF(passkey, sha256("lihim/v1"))
 sk   = HKDF-SHA256(prf, "lihim/sem/" ‖ group)
 (pk, secretScalar) = EdDSA-Poseidon(sk)  // Baby Jubjub`,
-    body: "Derived on your phone from your passkey, so a lost phone recovers the same identities. A different group gives a different key, so your groups can’t be linked on-chain.",
+    body: "Your phone derives it from your passkey. Thus, a new phone gets the same identities. Each group gives a different key. Nobody can connect your groups on-chain.",
   },
   {
     title: "Commitment",
     math: `C = Poseidon(pk.x, pk.y)`,
-    body: "The public “padlock” that goes on-chain. It says someone joined, not who.",
+    body: "The public value that goes on-chain. It shows that a person joined. It does not show who.",
   },
   {
     title: "Group tree",
     math: `root = LeanIMT_Poseidon(C₀, C₁, …, Cₙ₋₁)
 depth ∈ 1..32,  insert ≈ depth hashes`,
-    body: "A Lean Incremental Merkle Tree kept by the Soroban contract with on-chain Poseidon. When a poll opens, its root is frozen.",
+    body: "A Lean Incremental Merkle Tree in the Soroban contract, with Poseidon on-chain. When a poll opens, the contract freezes its root.",
   },
   {
     title: "Nullifier",
     math: `N = Poseidon(scope, secretScalar)
 scope = poll id,  message = your answer`,
-    body: "Same member and same poll always give the same N, so a second answer is rejected. A new poll gives an unrelated N.",
+    body: "The same member and the same poll always give the same N. Thus, the contract rejects a second answer. A new poll gives a different N.",
   },
   {
     title: "Groth16 proof over BN254",
@@ -468,14 +466,14 @@ scope = poll id,  message = your answer`,
 private = [secretScalar, leaf index, siblings]
 h(x)    = keccak256(x) >> 8
 π       = 8 field elements`,
-    body: "Built in a Web Worker with the official Semaphore V4 circuits and the keys from PSE’s multi-party trusted setup ceremony. One verification key per tree depth.",
+    body: "Your browser builds it in a Web Worker. It uses the official Semaphore V4 circuits and the keys from the PSE trusted setup ceremony. There is one verification key for each tree depth.",
   },
   {
     title: "On-chain check",
     math: `L = IC₀ + Σ sᵢ·ICᵢ            // bn254 g1_msm
 e(−A, B)·e(α, β)·e(L, γ)·e(C, δ) = 1  // pairing_check
 root ∈ recent roots,  N ∉ used  →  store N`,
-    body: "LihimVerifier runs the pairing check on Stellar’s native BN254 host functions and rejects off-curve or out-of-range inputs. LihimSemaphore then stores N and emits ProofValidated.",
+    body: "LihimVerifier does the pairing check on the native BN254 host functions of Stellar. It rejects inputs that are not on the curve or not in range. Then LihimSemaphore keeps N and emits ProofValidated.",
   },
 ];
 
@@ -483,25 +481,25 @@ const STACK: { icon: IconName; title: string; blurb: string; items: string[] }[]
   {
     icon: "verified",
     title: "Zero-knowledge",
-    blurb: "Semaphore V4, compatible byte-for-byte with the official libraries.",
+    blurb: "Semaphore V4. Each byte agrees with the official libraries.",
     items: ["Semaphore V4", "Groth16", "BN254", "Poseidon", "LeanIMT", "Baby Jubjub", "EdDSA-Poseidon", "keccak256", "Circom"],
   },
   {
     icon: "poll",
     title: "Stellar contracts",
-    blurb: "Three Soroban contracts in Rust: verifier, Semaphore groups and polls.",
+    blurb: "Three Soroban contracts in Rust: the verifier, the Semaphore groups and the polls.",
     items: ["Stellar", "Soroban", "Rust", "soroban-sdk 28", "soroban-poseidon", "BN254 host functions"],
   },
   {
     icon: "passkey",
     title: "Keys and identity",
-    blurb: "One passkey signs you in and derives every group identity. Nothing to write down.",
+    blurb: "One passkey signs you in and derives all group identities. You do not write anything down.",
     items: ["WebAuthn passkeys", "PRF extension", "HKDF-SHA256", "Ed25519 admin keys", "@noble/curves"],
   },
   {
     icon: "anonymous",
     title: "Client and SDK",
-    blurb: "A PWA with the prover in a Web Worker, and an SDK other Stellar apps can use.",
+    blurb: "A PWA with the prover in a Web Worker. Other Stellar apps can use the SDK.",
     items: [
       "Next.js 16",
       "React 19",
@@ -515,14 +513,14 @@ const STACK: { icon: IconName; title: string; blurb: string; items: string[] }[]
   },
   {
     icon: "send",
-    title: "Vote relay",
-    blurb: "Pays fees and submits proofs. No cookies, no auth header, no IP logs.",
+    title: "Answer relay",
+    blurb: "It pays the fees and sends the proofs. It uses no cookies and no auth header, and it does not log IP addresses.",
     items: ["Hono", "Node.js", "simulate-then-submit"],
   },
   {
     icon: "groups",
     title: "Off-chain data",
-    blurb: "Names and invites live here, behind row-level security. Votes never do.",
+    blurb: "Names and invites stay here, behind row-level security. Answers never stay here.",
     items: ["Supabase", "Postgres + RLS", "Edge Functions (Deno)", "pg_cron indexer"],
   },
 ];
@@ -530,14 +528,14 @@ const STACK: { icon: IconName; title: string; blurb: string; items: string[] }[]
 const RULES = [
   {
     title: "Move money",
-    body: "No payments, prizes, betting or paid votes. Ever.",
+    body: "No payments, no prizes, no bets and no paid answers. Never.",
   },
   {
     title: "Put your name on-chain",
-    body: "On-chain: roots, commitments, nullifiers, poll ids and answers. Names and emails stay off-chain, visible only to your group admin.",
+    body: "On-chain, there are only roots, commitments, nullifiers, poll ids and answers. Names and emails stay off-chain. Only your group admin can see them.",
   },
   {
     title: "Promise “100% anonymous”",
-    body: "We say exactly who can see what. In a small group, a lone answer can still be guessed, so polls need 8+ members.",
+    body: "We tell you exactly who can see what. In a small group, people can guess an answer. For this reason, each group has a minimum size.",
   },
 ];

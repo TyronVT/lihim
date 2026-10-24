@@ -44,7 +44,7 @@ insert into public.groups (id, chain_group_id, name, description, admin_user_id,
 values (
   '11111111-1111-4111-8111-111111111111',
   1,
-  'UP Sining (demo)',
+  'Art Guild (demo)',
   'Demo student org for local development.',
   '00000000-0000-4000-8000-000000000001',
   repeat('ab', 32),

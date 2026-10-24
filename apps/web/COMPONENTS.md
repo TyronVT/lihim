@@ -50,7 +50,7 @@ Theme: dark default; light via `prefers-color-scheme` or the user override (`<Th
 | `Button` | `components/button.tsx` | `variant?: primary \| secondary \| destructive \| ghost, block?=true, asChild?, loading?, loadingLabel?, icon?: IconName \| Glyph` | h48 r12; `asChild` wraps `<Link>`; destructive always behind `ConfirmSheet`. `icon` = one 20 px leading decorative icon (also inside an `asChild` `<Link>`), dropped while `loadingLabel` shows. Use the prop, not a child `<Icon>` |
 | `OptionGroup` | `components/option-group.tsx` | `options: PollOption[], value: number \| null, onSelect(v), phase?: "idle" \| "proving" \| "done", label? \| labelledBy?, disabled?` | Real radiogroup (P4): tap/Space/arrows/Home/End select; Enter on the selected row bubbles to the screen's "Send answer"; proving = lock + fade others 40 % + silver line |
 | `OptionRow` | `components/option-group.tsx` | `label, description?, selected, locked?, faded?, proving?, done?, tabbable?, onSelect?` | Presentational row (inside a `role="radiogroup"`) |
-| `RatingRow` | `components/option-group.tsx` | `value: number \| null, onSelect(n), phase?, label? \| labelledBy?, disabled?, minLabel?, maxLabel?` | Five 56 px squares, "3 out of 5", captions "Hindi maganda"/"Napakaganda"; static "Proving…" under reduced motion |
+| `RatingRow` | `components/option-group.tsx` | `value: number \| null, onSelect(n), phase?, label? \| labelledBy?, disabled?, minLabel?, maxLabel?` | Five 56 px squares, "3 out of 5", captions "Not good"/"Very good"; static "Proving…" under reduced motion |
 | `ProgressLine` | `components/option-group.tsx` | `className?` | The proving line (used inside rows) |
 | `VoteStatus` | `components/vote-status.tsx` | `phase: "idle" \| "proving" \| "sending" \| "recorded", slow?` | aria-live (polite) words for L6: one proving string, "Proving you're a member…" (R13), plus the slow line; recorded = Poll illustration rise-in + check |
 | `ResultBar` | `components/results.tsx` | `label, count, total, leading?` | Count + % as text, bar aria-hidden |
@@ -109,13 +109,13 @@ Theme: dark default; light via `prefers-color-scheme` or the user override (`<Th
 ## Mock data (`lib/data/mock.ts`)
 
 Viewer "Ana Reyes". Group ids are fixed uuids (`MOCK_GROUP_IDS`, `5a1e0000-0000-4000-8000-00000000000N`),
-because like `groups.id` they seed the identity HKDF (D1). Groups: `…0001` UP Sining (31, admin; polls
+because like `groups.id` they seed the identity HKDF (D1). Groups: `…0001` Art Guild (31, admin; polls
 `poll_retreat` open single hidden tally, `poll_ga_rating` open rating live tally closing soon, `poll_finance`
 closed yes/no, `poll_exhibit` closed single, `poll_draft` draft **failed** ("Didn't open"), `poll_opening` draft
 **pending** ("Opening…", stays pending); 3 queued joins for L4's "Adding members"; 2 removed members; invite
-`sining-2026` 12 of 50) · `…0002` Phase 2 HOA (54, member;
+`art-2026` 12 of 50) · `…0002` Phase 2 HOA (54, member;
 `poll_dues` open yes/no hidden) · `…0003` BS Psych 3-B (6 members, min 8, admin → blocked L5, no polls) ·
-`…0004` choir (joinable). Invites: `sining-2026` (already member), `hoa-phase2` (already member),
+`…0004` choir (joinable). Invites: `art-2026` (already member), `hoa-phase2` (already member),
 `choir-fatima` (joinable, 18 members), `expired-demo` (invalid).
 
 ## Prover and data modes
@@ -320,7 +320,7 @@ asks for permission.
 |---|---|
 | `signIn()`, `signUp(displayName)`, `signOut()`, `updateDisplayName(name)` → `CurrentUser` / `void` | Use via `lib/session.ts` |
 | `getMembers(groupId, { includeRemoved: true })` | Active (admin first), then `status: "removed"` rows for L4's collapsed "Removed (n)" |
-| `countPendingMembers(groupId): Promise<number>` | Admin. Joins waiting for `addPendingMembers` → "Adding 3 new members…" (mock: 3 in UP Sining; `addPendingMembers` then takes ~2.5 s and returns 3, then 0) |
+| `countPendingMembers(groupId): Promise<number>` | Admin. Joins waiting for `addPendingMembers` → "Adding 3 new members…" (mock: 3 in Art Guild; `addPendingMembers` then takes ~2.5 s and returns 3, then 0) |
 | `leaveGroup(groupId): Promise<void>` | Member only (admin → `ForbiddenError`). Off-chain like `removeMember` (D5): the leaf stays, answers stay counted; rejoin needs a new invite |
 | `getActiveInvite(groupId): Promise<ActiveInvite \| null>` | Admin. Newest working link: `{ id, groupId, token \| null, url \| null, maxUses \| null, uses, expiresAt }`. **`token`/`url` are null when the link was made on another device** (Supabase stores only a hash) → show `copy.invite.madeElsewhere` + "Turn off" / "Make a new link" |
 | `revokeInvite(inviteId): Promise<void>` | Admin, "Turn off this link" (sets `expires_at = now()`) |

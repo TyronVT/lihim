@@ -1,18 +1,18 @@
 /**
- * In-memory demo repository with realistic Taglish data. State lives for the page
+ * In-memory demo repository with realistic English data. State lives for the page
  * session (module scope); a full reload resets it.
  *
  * The default data layer (NEXT_PUBLIC_DATA=mock); lib/data/supabase.ts is the real one. Kept for
  * /dev/components, tests and offline UI work.
  *
  * Demo cast — the viewer is "Ana Reyes", signed in by default:
- * - UP Sining (31 members, Ana is admin): open single-choice poll, open rating poll,
+ * - Art Guild (31 members, Ana is admin): open single-choice poll, open rating poll,
  *   closed yes/no with results, closed single-choice with results, one poll still opening
  *   (P6 "Opening…") and one that didn't open (P6 "Didn't open · Try again"), 3 joins waiting
- *   to be added (L4 "Adding 3 new members…"), 2 removed members, invite "sining-2026" (12 of 50).
+ *   to be added (L4 "Adding 3 new members…"), 2 removed members, invite "art-2026" (12 of 50).
  * - Phase 2 HOA, Camella Dasmariñas (54 members, Ana is member): open poll with hidden tally.
  * - BS Psych 3-B Thesis Circle (6 members, Ana is admin, min 8): blocked small-group state.
- * Invite tokens: "sining-2026" (valid), "hoa-phase2" (already member), "expired-demo" (invalid).
+ * Invite tokens: "art-2026" (valid), "hoa-phase2" (already member), "expired-demo" (invalid).
  *
  * Session (P1): signOut is real — it persists a signed-out flag in localStorage (MOCK_SESSION_KEY)
  * so /signin is reachable and the auth gate can be tested; signIn/signUp clear it after a
@@ -204,8 +204,8 @@ function addGroup(g: Omit<GroupRecord, "memberCount">) {
 addGroup({
   id: MOCK_GROUP_IDS.upsining,
   chainGroupId: "7",
-  name: "UP Sining",
-  description: "Org ng mga visual artists sa UP Diliman. Dito tayo nagdedesisyon nang tapat.",
+  name: "Art Guild",
+  description: "The visual artists of UP Diliman. We make our decisions here, honestly.",
   minMembers: 8,
   createdAt: at(-120 * DAY),
   createdByName: "Ana Reyes",
@@ -218,7 +218,7 @@ addGroup({
   id: MOCK_GROUP_IDS.hoa,
   chainGroupId: "12",
   name: "Phase 2 HOA, Camella Dasmariñas",
-  description: "Homeowners ng Phase 2. Para sa mga desisyon sa dues, security at amenities.",
+  description: "The homeowners of Phase 2. We decide about dues, security and amenities here.",
   minMembers: 10,
   createdAt: at(-300 * DAY),
   createdByName: "Rodel Santos",
@@ -231,7 +231,7 @@ addGroup({
   id: MOCK_GROUP_IDS.thesis,
   chainGroupId: "19",
   name: "BS Psych 3-B Thesis Circle",
-  description: "Peer feedback sa thesis drafts.",
+  description: "Feedback from peers about thesis drafts.",
   minMembers: 8,
   createdAt: at(-9 * DAY),
   createdByName: "Ana Reyes",
@@ -240,7 +240,7 @@ addGroup({
   roster: makeRoster(37, 6, "Ana Reyes", 9, true),
 });
 
-// Two people the admin already removed from UP Sining (L4 "Removed (2)").
+// Two people the admin already removed from Art Guild (L4 "Removed (2)").
 // memberCount stays 31: it was computed before, and removal is off-chain only (D5).
 for (const m of groups.get(MOCK_GROUP_IDS.upsining)!.roster.filter((x) => !x.isAdmin).slice(-2)) m.status = "removed";
 
@@ -318,9 +318,9 @@ addPoll({
   id: "poll_retreat",
   seed: 101,
   groupId: MOCK_GROUP_IDS.upsining,
-  title: "Saan tayo mag-retreat this sem?",
+  title: "Where do we go for the retreat this term?",
   kind: "single",
-  options: singleOptions(["Tagaytay", "Baguio", "La Union", "Sa campus na lang"]),
+  options: singleOptions(["Tagaytay", "Baguio", "La Union", "We stay on campus"]),
   opensAt: at(-2 * DAY),
   closesAt: at(2 * DAY + 6 * HOUR),
   hideLiveTally: true,
@@ -348,7 +348,7 @@ addPoll({
   id: "poll_finance",
   seed: 103,
   groupId: MOCK_GROUP_IDS.upsining,
-  title: "Approve ba ang financial report ng 1st sem?",
+  title: "Do you approve the financial report for the first term?",
   kind: "yesno",
   options: YES_NO_OPTIONS,
   opensAt: at(-12 * DAY),
@@ -363,9 +363,9 @@ addPoll({
   id: "poll_exhibit",
   seed: 104,
   groupId: MOCK_GROUP_IDS.upsining,
-  title: "Theme ng year-end exhibit?",
+  title: "What is the theme of the year-end exhibit?",
   kind: "single",
-  options: singleOptions(["Lihim at liwanag", "Bahay", "Ingay", "Bukas"]),
+  options: singleOptions(["Secrets and light", "Home", "Noise", "Tomorrow"]),
   opensAt: at(-30 * DAY),
   closesAt: at(-25 * DAY),
   hideLiveTally: true,
@@ -397,7 +397,7 @@ addPoll({
   seed: 106,
   openState: "pending",
   groupId: MOCK_GROUP_IDS.upsining,
-  title: "Magkano ang per head sa Christmas party?",
+  title: "How much does each person pay for the Christmas party?",
   kind: "single",
   options: singleOptions(["₱300", "₱500", "₱800"]),
   opensAt: at(0),
@@ -412,7 +412,7 @@ addPoll({
   id: "poll_dues",
   seed: 201,
   groupId: MOCK_GROUP_IDS.hoa,
-  title: "Itaas ba ang monthly dues to ₱500 para sa dagdag na guard?",
+  title: "Do we increase the monthly dues to ₱500 for one more guard?",
   kind: "yesno",
   options: YES_NO_OPTIONS,
   opensAt: at(-3 * DAY),
@@ -437,7 +437,7 @@ function addInvite(token: string, groupId: string, valid: boolean, maxUses: numb
     valid,
   });
 }
-addInvite("sining-2026", MOCK_GROUP_IDS.upsining, true, 50, 12);
+addInvite("art-2026", MOCK_GROUP_IDS.upsining, true, 50, 12);
 addInvite("hoa-phase2", MOCK_GROUP_IDS.hoa, true);
 addInvite("expired-demo", MOCK_GROUP_IDS.upsining, false);
 
@@ -446,7 +446,7 @@ addGroup({
   id: MOCK_GROUP_IDS.choir,
   chainGroupId: "23",
   name: "Our Lady of Fatima Youth Choir",
-  description: "Choir ministry ng parish. Feedback sa practice schedule at songs.",
+  description: "The choir of the parish. Feedback about the practice schedule and the songs.",
   minMembers: 8,
   createdAt: at(-60 * DAY),
   createdByName: "Kuya Jun Pascual",

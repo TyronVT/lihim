@@ -74,7 +74,7 @@ Deno.serve(handler(async (req) => {
       const length = new Date(p.closes_at).getTime() - new Date(p.opens_at ?? p.closes_at).getTime();
       if (length < MIN_POLL_LENGTH_FOR_REMINDER_MS) continue;
       const left = closesInText(new Date(p.closes_at).getTime() - now);
-      total += (await pushToGroup(db, p.group_id, payloadFor(p, `Poll closes in ${left} — ${groupName(p)}`))).sent;
+      total += (await pushToGroup(db, p.group_id, payloadFor(p, `A poll closes in ${left}: ${groupName(p)}`))).sent;
     }
     return json(null, { ok: true, polls: claimed?.length ?? 0, sent: total });
   }

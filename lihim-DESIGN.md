@@ -126,8 +126,8 @@ Test the maskable icon at maskable.app before shipping.
   hidden letters, no redacted bars) — the Mark already carries the idea.
 - Lockup: Mark (or Glyph) left of wordmark, gap = 0.4 × Mark height, wordmark
   cap height ≈ 40% of Mark height.
-- Tagline: *Prove you belong. Never say who you are.* Taglish alt for
-  social posts: *Sabihin ang totoo. Walang makakaalam kung sino ka.*
+- Tagline: *Prove you belong. Never say who you are.* English only, also on
+  social posts.
 
 ## Colour
 
@@ -308,11 +308,11 @@ Calm and short. Nothing bounces.
 1. Tap an option → option row locks, other rows fade to 40%.
 2. A thin silver progress line runs along the bottom of the selected row while
    the Web Worker proves (≈ 1 s; indeterminate if > 1.5 s). Label:
-   "Pinapatunayang member ka…" / "Proving you're a member…".
+   "Proving that you are a member…".
 3. On relay success: the Poll illustration fades in (320 ms, 8 px rise), label
-   becomes "Recorded anonymously", `--success` check.
+   becomes "Your answer is recorded anonymously", `--success` check.
 4. If proving takes > 4 s (budget Androids at higher depths): add the line
-   "Medyo matagal sa phone na 'to — okay lang, tuloy pa rin." Never show a
+   "This takes more time on some phones. Do not close this page." Never show a
    spinner with no words.
 
 `prefers-reduced-motion`: replace all movement with 120 ms opacity fades; the
@@ -328,7 +328,7 @@ Built on shadcn/ui primitives, restyled with the tokens above.
 | **Button – secondary** | Transparent, 1 px `--border-control`, `--text-1` label. |
 | **Button – destructive** | Secondary style with `--danger` label; always behind a confirm sheet. |
 | **Option row** (single choice / yes-no) | `--surface`, 1 px `--border-control`, radius 12, min-height 56, label left, radio right. Selected: `--surface-raised`, 2 px `--accent` border. |
-| **Rating row** (1–5) | Five equal 56 px square buttons, numbers in `label` weight, end labels in `caption` ("Hindi maganda" / "Napakaganda"). No stars — stars feel like product reviews. |
+| **Rating row** (1–5) | Five equal 56 px square buttons, numbers in `label` weight, end labels in `caption` ("Not good" / "Very good"). No stars — stars feel like product reviews. |
 | **Result bar** | Track `--ink-800`, fill `--accent` (`--ink-600` for non-leading options), height 8, radius full; count + % right-aligned, tabular. Leading option label in 600 weight; no trophy, no colour change. |
 | **Turnout meter** | "23 of 31 members answered" + thin bar. Never "8 haven't answered" (that framing implies we know who). |
 | **Verified badge** | Pill: `shield-check` + "Every vote verified", `--success` text on `--surface-raised`. Tap → L9. |
@@ -358,7 +358,7 @@ padding and safe-area inset.
 | L5 | Create poll | Poll | Type segmented control (Single choice / Yes–No / Rating 1–5), question, options (add/remove, max 8), closing time, "Hide results until closing" switch (on by default). Below `min_members`: whole form disabled under a warning card explaining why. |
 | L6 | Vote | Poll (success only) | Question in `display`. Option rows. Anonymity banner above options. Tap = answer (no separate submit; confirm sheet only for Yes/No polls tagged "important" — open question). Proving moment as above. Already answered → `--danger` card "You've already answered this poll" with no hint of what they chose. |
 | L7 | Results | Verified (badge) | Headline: leading option or average rating. Result bars. Turnout meter. Verified badge → L9. Small-group warning if applicable. While open and hidden: "Results show when the poll closes at 6:00 PM" + turnout only. |
-| L8 | Privacy explainer | Mark (96 px) | Three-row "who can see what" table with icons: Admin sees *who's a member*; Nobody sees *who answered what*; Anyone can *check the count*. Then the small-group warning, then "What Lihim can't protect against" (screenshots, coercion) in plain Taglish. |
+| L8 | Privacy explainer | Mark (96 px) | Three-row "who can see what" table with icons: Admin sees *who's a member*; Nobody sees *who answered what*; Anyone can *check the count*. Then the small-group warning, then "What Lihim cannot protect against" (screenshots, coercion) in plain English. |
 | L9 | Verify this poll (public) | Verified | Public, no login. Summary card (question, closed date, members at open, answers, recounted tally) then an expandable table: # · nullifier (hash chip) · answer. Footer: "Recounted from the public record, not from Lihim's server." Monospace-heavy is fine here; it's a receipt. |
 
 ## Voice and copy
@@ -371,21 +371,25 @@ From the build spec's product rules, made concrete:
 - **No crypto words.** Users never see: blockchain, on-chain, wallet, ZK,
   proof, nullifier, Stellar, XLM, gas, fee. Exceptions: L9 may say "public
   record" and show hashes, with "Stellar" in a footnote link for the curious.
-- **Taglish is welcome**, matching how the beachhead (student orgs) actually
-  talks. Keep English for anything legal (privacy notice).
+- **English only**, written to ASD-STE100 (Simplified Technical English).
+  "Lihim", the app name, is the one word that is not English. Rules:
+  one instruction per sentence, started with a verb; 20 words or fewer for
+  instructions and 25 or fewer for descriptions; active voice and simple
+  tenses; no contractions, idioms or slang ("cannot", not "can't"); one word
+  for one meaning ("answer", never "vote" or "response").
 - **Never nudge individuals about voting.** No "you haven't voted yet".
 
 | Situation | ✅ Use | ❌ Avoid |
 |---|---|---|
-| Vote recorded | "Recorded anonymously" | "Transaction confirmed on-chain" |
-| Proving | "Proving you're a member…" | "Generating ZK proof…" |
-| Verified result | "Every vote verified" | "Cryptographically secured" |
-| Double vote | "You've already answered this poll." | "Nullifier already used" |
-| Small group | "Small groups can still guess who voted what." | (silence) |
-| Reminder push | "Poll closes in 2 hours — UP Sining" | "You haven't voted yet!" |
-| Joined | "You're in. Your answers here are anonymous." | "Identity commitment registered" |
-| Admin roster | "Only you see this list." | — |
-| Network fail | "Hindi na-send. Check your connection and try again — wala pang na-record." | "Error 500" |
+| Answer recorded | "Your answer is recorded anonymously" | "Transaction confirmed on-chain" |
+| Proving | "Proving that you are a member…" | "Generating ZK proof…" |
+| Verified result | "All answers are verified" | "Cryptographically secured" |
+| Double answer | "You answered this poll before." | "Nullifier already used" |
+| Small group | "In a small group, people can sometimes guess who gave which answer." | (silence) |
+| Reminder push | "A poll closes in 2 hours: Art Guild" | "You haven't voted yet!" |
+| Joined | "You are a member now. Your answers here are anonymous." | "Identity commitment registered" |
+| Admin roster | "Only you can see this list." | — |
+| Network fail | "Lihim did not send your answer. Nothing is recorded. Check your connection and try again." | "Error 500" |
 
 ## Accessibility
 

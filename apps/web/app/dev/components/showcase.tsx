@@ -59,7 +59,7 @@ import type { PollOption } from "@/lib/data/types";
 import { formatClosing, formatShortDate } from "@/lib/format";
 import { castVote } from "@/lib/vote";
 
-const SAMPLE_OPTIONS: PollOption[] = ["Tagaytay", "Baguio", "La Union", "Sa campus na lang"].map((label, value) => ({ value, label }));
+const SAMPLE_OPTIONS: PollOption[] = ["Tagaytay", "Baguio", "La Union", "We stay on campus"].map((label, value) => ({ value, label }));
 const SAMPLE_HASH = "0x1a7f3a9c210b44e8d5c6f0a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3c91e";
 // Fixed instant: render must be pure and server/client output must match.
 const NOW = Date.parse("2026-10-22T02:00:00Z");
@@ -178,7 +178,7 @@ function VoteDemo({ kind }: { kind: "single" | "rating" }) {
       />
       <AnonymityBanner>{copy.anonymity.bannerVote}</AnonymityBanner>
       {kind === "single" ? (
-        <OptionGroup label="Saan tayo mag-retreat this sem?" options={SAMPLE_OPTIONS} value={value} onSelect={pick} phase={answerPhase} />
+        <OptionGroup label="Where do we go for the retreat this term?" options={SAMPLE_OPTIONS} value={value} onSelect={pick} phase={answerPhase} />
       ) : (
         <RatingRow label="Rate the GA last Friday" value={value} onSelect={pick} phase={answerPhase} />
       )}
@@ -235,10 +235,10 @@ export function Showcase() {
         </Block>
 
         <Block title="Type scale">
-          <p className="text-display">Saan tayo mag-retreat?</p>
+          <p className="text-display">Where do we go for the retreat?</p>
           <p className="text-title">Screen title</p>
           <p className="text-heading">Card heading</p>
-          <p className="text-body">Body text, 16/24. Sabihin ang totoo.</p>
+          <p className="text-body">Body text, 16/24. Say what you think.</p>
           <p className="text-label">Label 14/20 medium</p>
           <p className="text-caption text-text-2">Caption 13/18 · text-2</p>
           <p className="text-caption text-text-3">Caption · text-3</p>
@@ -314,7 +314,7 @@ export function Showcase() {
             <Label>locked + proving</Label>
             <OptionRow label="La Union" selected locked proving />
             <Label>faded</Label>
-            <OptionRow label="Sa campus na lang" selected={false} locked faded />
+            <OptionRow label="We stay on campus" selected={false} locked faded />
             <Label>done</Label>
             <OptionRow label="Yes" selected locked done />
           </div>
@@ -402,7 +402,7 @@ export function Showcase() {
         </Block>
 
         <Block title="Member count">
-          <MemberCountBlock count={31} caption="UP Sining" />
+          <MemberCountBlock count={31} caption="Art Guild" />
           <MemberCountBlock count={1} />
         </Block>
 
@@ -412,10 +412,10 @@ export function Showcase() {
         </Block>
 
         <Block title="List rows">
-          <ListRow href={`/g/${MOCK_GROUP_IDS.upsining}`} title="UP Sining" meta={copy.members.count(31)} />
+          <ListRow href={`/g/${MOCK_GROUP_IDS.upsining}`} title="Art Guild" meta={copy.members.count(31)} />
           <ListRow
             href="/p/poll_retreat"
-            title="Saan tayo mag-retreat this sem?"
+            title="Where do we go for the retreat this term?"
             meta={formatClosing(NOW + 2 * 86_400_000, NOW)}
             trailing={<StatusPill status="open" />}
           />
@@ -429,7 +429,7 @@ export function Showcase() {
           />
           <ListRow
             href={`/g/${MOCK_GROUP_IDS.upsining}`}
-            title="UP Sining"
+            title="Art Guild"
             meta={copy.members.count(31)}
             trailing={
               <span className="flex shrink-0 items-center gap-2">
@@ -517,7 +517,7 @@ export function Showcase() {
           </p>
           <Card>
             <ShellHeader
-              back={{ href: `/g/${MOCK_GROUP_IDS.upsining}`, label: "UP Sining" }}
+              back={{ href: `/g/${MOCK_GROUP_IDS.upsining}`, label: "Art Guild" }}
               title={copy.roster.title}
               context={`${copy.members.count(31)} · ${copy.members.rosterNote}`}
               actions={<Button icon="invite">{copy.roster.inviteCta}</Button>}
@@ -539,8 +539,8 @@ export function Showcase() {
         </Block>
 
         <Block title="Form controls">
-          <TextField label="Group name" placeholder="UP Sining" counter="9/60" />
-          <TextField label="With error" defaultValue="" error="Lagyan ng pangalan ang group." />
+          <TextField label="Group name" placeholder="Art Guild" counter="9/60" />
+          <TextField label="With error" defaultValue="" error="Type a name for the group." />
           <TextArea label="Description" hint="Optional. Members see this on the invite." />
           <Stepper label="Minimum group size" value={min} onChange={setMin} min={5} max={500} unit="members" hint={copy.smallGroup.minSizeHelp} />
           <SegmentedControl

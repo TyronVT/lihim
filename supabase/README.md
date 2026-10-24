@@ -16,7 +16,7 @@ supabase/
     20261022000100_public_poll_audit.sql   L9 public view (closed polls only)
     20261022000200_schedules.sql      pg_net/pg_cron jobs, Vault-backed function calls, push trigger
     20261022000300_poll_frozen_commitments.sql   frozen leaf set for the prover (members only)
-  seed.sql                            demo group "UP Sining (demo)", 3 polls, synthetic events
+  seed.sql                            demo group "Art Guild (demo)", 3 polls, synthetic events
   functions/
     deno.json                         nodeModulesDir "none" (ignore the npm workspace's node_modules), no lockfile
     _shared/                          deps (pinned npm: imports), http/cors, supabase, stellar, events, meta,

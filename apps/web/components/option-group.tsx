@@ -222,7 +222,7 @@ export interface RatingRowProps {
   label?: string;
   labelledBy?: string;
   disabled?: boolean;
-  /** End captions. Default "Hindi maganda" / "Napakaganda". */
+  /** End captions. Default "Not good" / "Very good". */
   minLabel?: string;
   maxLabel?: string;
   className?: string;

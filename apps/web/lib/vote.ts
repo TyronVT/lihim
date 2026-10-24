@@ -16,7 +16,7 @@ import { submitVote, type RelayOutcome } from "./relay";
 /** proving → (slow after 4 s) → sending → done. */
 export type VotePhase = "proving" | "sending";
 
-/** Show the "medyo matagal" line after this long (design: Motion → proving moment). */
+/** Show the "takes more time" line after this long (design: Motion → proving moment). */
 export const SLOW_PROVING_MS = 4000;
 
 export type VoteResult =
