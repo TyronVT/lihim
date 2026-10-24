@@ -424,7 +424,8 @@ export const copy = {
     waitingPasskey: "Waiting for your passkey…",
     joining: "Joining…",
     cancelled: "You cancelled the passkey. Nothing changed. Push the button to try again.",
-    unsupported: "This browser cannot use passkeys. Open the link in Chrome or Safari on your phone.",
+    unsupported:
+      "This browser cannot keep your answers private. Open the link in Safari on a Mac or iPhone, or in Chrome on a computer or Android phone.",
     failed: "Lihim cannot add you to the group now. Check your connection and try again.",
     invalidBody: "Ask the group admin for a new link.",
     openGroup: "Open group",

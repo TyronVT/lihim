@@ -154,8 +154,6 @@ and broke browser auth with a 401. That key was deleted in Supabase. After any c
      re-check by itself.
    - Members reach the chain only when the admin opens the Members screen; consider a reminder
      or sending on the group page.
-   - The "unsupported browser" notice on sign-in now names desktop browsers too; the join screen's
-     notice (`copy.join.unsupported`) still names only phones.
    - The English copy is longer than the Taglish it replaced. Check buttons, notices and the vote
      screen on a phone for awkward wrapping (not checked visually).
 3. **M0 leftovers**: a tampered proof with a *valid* root on testnet (the scripted run only hit
