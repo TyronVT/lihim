@@ -98,6 +98,12 @@ and broke browser auth with a 401. That key was deleted in Supabase. After any c
   the relay, turnout 2 of 2.
 - **PRF support**: works with Google Password Manager and iCloud Keychain. Brave (and Chromium's
   local "profile" passkey store) has no PRF, so sign-up stops with the "unsupported" notice.
+- **Re-prompt after reload** (poll 3, 03:43 UTC): both accounts reloaded, voted, and got one
+  passkey prompt each, limited to their own passkey; both votes recorded with no sign-in call.
+- **Indexer on confirm** (poll 4, 03:45 UTC): `poll_created` was indexed ~3 s after the
+  `create_poll` confirmation, between two cron runs, so the poll was answerable right away.
+- **Passkey list**: one `passkey_credentials` request per page load (was two).
+- Not yet checked on a phone: the back links and the Settings gear (`baabed2`).
 
 ## Done in this round
 
@@ -107,9 +113,18 @@ and broke browser auth with a 401. That key was deleted in Supabase. After any c
   `lib/data/supabase.ts` that runs one local passkey prompt limited to the signed-in user's own
   passkeys. Key-needing actions call `ensurePrfOutput()` first so the prompt follows the tap
   (Safari). A dismissed prompt on the vote screen returns quietly to picking.
+  The viewer's credential ids are cached in memory when the session appears (one shared request,
+  `c6c8a96`), so the prompt opens with no fetch in between.
 - **Indexer on confirm**: migration `20261024000000_index_on_admin_tx` runs the indexer as soon as
   an admin tx is confirmed, so a new poll gets its `frozen_root` in seconds instead of up to a
   minute.
+- **Navigation** (`baabed2`): back links that still pointed at `/` (the landing page since the
+  home moved to `/groups`) now go to `APP_HOME`: Settings, Create group, the poll's error states,
+  the join screen when signed in. Privacy keeps `/` because signed-out visitors reach it from the
+  landing page. The group screen (L3) has a back arrow to "Your groups" on compact.
+- **Settings from anywhere**: `AppBar` takes a `settings` flag that adds a gear link to
+  `/settings` (and so Sign out); it is set on every signed-in screen except Settings. Desktop
+  already had Settings in the sidebar.
 - `.mcp.json` points Claude Code's Supabase MCP at the project.
 
 ## Remaining work
@@ -124,7 +139,8 @@ and broke browser auth with a 401. That key was deleted in Supabase. After any c
    - Error copy hides passkey problems: a missing or cancelled passkey on create group / create
      poll still shows the screens' generic error, and sign-in failures say "check your connection".
    - A vote screen opened before the poll's `frozen_root` exists says "not open yet" until
-     reloaded. Make it re-check by itself.
+     reloaded. The indexer trigger shrank that window to a few seconds; the screen could still
+     re-check by itself.
    - Members reach the chain only when the admin opens the Members screen; consider a reminder
      or sending on the group page.
    - The "unsupported browser" notice only names phone browsers; desktop Brave/Firefox users
