@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createApp } from "../src/app.ts";
+import { createApp } from "../src/create-app.ts";
 import type { SimOutcome, SubmitOutcome, VoteChain } from "../src/chain.ts";
 import { createLogger } from "../src/log.ts";
 import { createInvalidVoteLimiter } from "../src/rate-limit.ts";

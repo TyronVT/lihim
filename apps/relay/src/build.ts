@@ -1,5 +1,5 @@
 // Wires real dependencies from env. A missing secret fails loudly at startup.
-import { createApp } from "./app.ts";
+import { createApp } from "./create-app.ts";
 import { StellarVoteChain } from "./chain.ts";
 import { loadConfig } from "./config.ts";
 import { createLogger } from "./log.ts";
