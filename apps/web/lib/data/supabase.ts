@@ -65,9 +65,11 @@ function db(): SupabaseClient {
         // prf_out must not outlive the session that unlocked it (shared devices).
         setPrfOutput(null);
         ownCredentials = null;
+        credentialsLoad = null;
       } else if (session && ownCredentials?.userId !== session.user.id) {
         // Deferred: supabase-js must not be called from inside this callback.
-        setTimeout(() => void loadOwnCredentials().catch(() => undefined), 0);
+        const userId = session.user.id;
+        setTimeout(() => void loadOwnCredentials(userId).catch(() => undefined), 0);
       }
     });
   }
@@ -79,14 +81,23 @@ function db(): SupabaseClient {
  * can open straight from a tap, with no fetch in between (Safari needs the gesture to be recent).
  */
 let ownCredentials: { userId: string; credentials: OwnCredential[] } | null = null;
+/** The load in flight, shared: supabase-js fires several auth events on startup (one fetch, not two). */
+let credentialsLoad: { userId: string; promise: Promise<OwnCredential[]> } | null = null;
 
-async function loadOwnCredentials(): Promise<OwnCredential[]> {
-  const viewer = await uid();
-  const credentials = rowsOf(
-    await db().from("passkey_credentials").select("credential_id, transports").eq("user_id", viewer).returns<OwnCredential[]>(),
-  );
-  ownCredentials = { userId: viewer, credentials };
-  return credentials;
+function loadOwnCredentials(userId: string): Promise<OwnCredential[]> {
+  if (credentialsLoad?.userId === userId) return credentialsLoad.promise;
+  const load = (async () => {
+    const credentials = rowsOf(
+      await db().from("passkey_credentials").select("credential_id, transports").eq("user_id", userId).returns<OwnCredential[]>(),
+    );
+    ownCredentials = { userId, credentials };
+    return credentials;
+  })();
+  const promise = load.finally(() => {
+    if (credentialsLoad?.promise === promise) credentialsLoad = null;
+  });
+  credentialsLoad = { userId, promise };
+  return promise;
 }
 
 /** identity.ts's unlocker: prf_out again after a reload, from one of the viewer's own passkeys. */
@@ -95,7 +106,7 @@ async function unlockPrf(): Promise<Uint8Array> {
   const viewer = data.session?.user.id;
   if (!viewer) throw new PasskeyRequiredError();
   const cached = ownCredentials?.userId === viewer ? ownCredentials.credentials : [];
-  const credentials = cached.length > 0 ? cached : await loadOwnCredentials();
+  const credentials = cached.length > 0 ? cached : await loadOwnCredentials(viewer);
   if (credentials.length === 0) throw new PasskeyRequiredError();
   return passkeyUnlock(credentials);
 }
