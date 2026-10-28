@@ -59,7 +59,7 @@
 - [Deployed contracts](#deployed-contracts) · [Contract interface](#contract-interface)
 - [Quick start: app](#quick-start--app) · [Quick start: contracts](#quick-start--contracts) · [SDK](#sdk)
 - [Tech stack](#tech-stack) · [Repository layout](#repository-layout) · [Testing](#testing)
-- [Product rules](#product-rules) · [Roadmap](#roadmap) · [Documentation](#documentation)
+- [Product rules](#product-rules) · [Roadmap](#roadmap)
 
 ## Try it
 
@@ -441,16 +441,3 @@ There is no CI workflow yet; run the commands above before pushing.
 - [ ] Web push subscription in the browser, wired to the `notify` function
 - [ ] A security audit of the contracts
 
-## Documentation
-
-| Document | Contents |
-| --- | --- |
-| [lihim-SPEC.md](./lihim-SPEC.md) | Product and build spec: problem, rules, identity, architecture, data model, threats |
-| [lihim-DESIGN.md](./lihim-DESIGN.md) | Design system, voice and ASD-STE100 copy rules |
-| [lihim-UIUX-SPEC.md](./lihim-UIUX-SPEC.md) | Screens L0–L10 on phone and desktop |
-| [contracts/README.md](./contracts/README.md) | Contract design, tests, costs and deviations |
-| [contracts/INTERFACE.md](./contracts/INTERFACE.md) | Canonical interface: signatures, encodings, events, errors, storage keys |
-| [packages/sdk/README.md](./packages/sdk/README.md) | SDK quickstart |
-| [apps/relay/README.md](./apps/relay/README.md) | Relay API, configuration and privacy notes |
-| [supabase/README.md](./supabase/README.md) | Migrations, RLS and Edge Functions |
-| [HANDOFF.md](./HANDOFF.md), [HANDOFF-UIUX.md](./HANDOFF-UIUX.md) | Deployment status and open work |
