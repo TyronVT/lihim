@@ -221,8 +221,8 @@ All three contracts run on **Stellar testnet**. The ids are also in
 **What testnet costs (measured)**
 
 Every write pays rent for its whole TTL extension up front. At a 120-day TTL, `create_group`
-simulated at ~478 XLM, above the per-transaction fee cap, so the TTL is now 14 days and
-`create_group` costs **~30 XLM** on testnet. Users never see or pay this: the admin and vote fee
+simulated at about 478 XLM, above the per-transaction fee cap, so the TTL is now 14 days and
+`create_group` costs **about 30 XLM** on testnet. Users never see or pay this: the admin and vote fee
 keys pay. Production rent and TTL are still to be measured on mainnet.
 
 | Operation | CPU instructions (test env) |
@@ -343,7 +343,7 @@ each, nobody knows who" without writing its own circuit:
 - thin `LihimSemaphoreClient` / `LihimPollsClient` that build and simulate transactions with
   `@stellar/stellar-sdk`.
 
-Its README has a ~30-minute quickstart: a group, three members and a verified proof on testnet.
+Its README has a 30-minute quickstart: a group, three members and a verified proof on testnet.
 
 ## Tech stack
 
