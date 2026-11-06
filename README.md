@@ -158,9 +158,9 @@ who is a member: that is the group admin's job.
 | The proof guarantees | The proof does not do |
 | --- | --- |
 | The answer came from a member of the frozen group | Decide who is a real member (the admin does) |
-| Each member answers each poll at most one time | Hide answers in a group too small to be anonymous |
-| Nobody (admin, operator, public) can link an answer to a member | Hide that you are a member from the operator: Supabase knows who joined which group |
-| Anyone can recount the tally from Stellar | Seal the live tally cryptographically (the UI hides it; the chain does not) |
+| Each member answers each poll at most one time | Hide that you are a member from the operator: Supabase knows who joined which group |
+| Nobody (admin, operator, public) can link an answer to a member | Seal the live tally cryptographically (the UI hides it; the chain does not) |
+| Anyone can recount the tally from Stellar | |
 
 **Never stored anywhere off-chain:** which user cast which answer, nullifier ↔ user, commitment ↔
 user, the PRF output, identity private keys, admin signing keys.

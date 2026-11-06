@@ -174,7 +174,6 @@ export default function WelcomePage() {
                 items={[
                   "Decide who is a member. The group admin decides this.",
                   "Hide that you joined. The admin sees the member list. The admin never sees the answers.",
-                  "Make a group of 3 people anonymous. For this reason, each group has a minimum size before a poll can open.",
                   "Hide the live count from the chain. Lihim hides live results only in the app.",
                 ]}
               />
@@ -535,7 +534,7 @@ const RULES = [
     body: "On-chain, there are only roots, commitments, nullifiers, poll ids and answers. Names and emails stay off-chain. Only your group admin can see them.",
   },
   {
-    title: "Promise “100% anonymous”",
-    body: "We tell you exactly who can see what. In a small group, people can guess an answer. For this reason, each group has a minimum size.",
+    title: "Record who gave which answer",
+    body: "The zero-knowledge proof shows that a member answered. It does not show which member. Lihim keeps no record that connects you to your answer. Thus, we cannot give that record to anyone.",
   },
 ];
