@@ -17,7 +17,7 @@
 </p>
 
 <p align="center">
-  <a href="https://lihim.vercel.app"><img src="https://img.shields.io/badge/◆_Live_app-lihim.vercel.app-000000?style=for-the-badge&logo=vercel&logoColor=white" alt="Live app" /></a>
+  <a href="https://lihim.tech"><img src="https://img.shields.io/badge/◆_Live_app-lihim.tech-000000?style=for-the-badge&logo=vercel&logoColor=white" alt="Live app" /></a>
   <a href="./lihim-SPEC.md"><img src="https://img.shields.io/badge/⌘_Spec-4B5563?style=for-the-badge" alt="Spec" /></a>
   <a href="./contracts/INTERFACE.md"><img src="https://img.shields.io/badge/Contract_interface-6D5EF8?style=for-the-badge" alt="Contract interface" /></a>
   <a href="./packages/sdk/README.md"><img src="https://img.shields.io/badge/@lihim/sdk-CB3837?style=for-the-badge&logo=npm&logoColor=white" alt="@lihim/sdk" /></a>
@@ -42,7 +42,7 @@
 </p>
 
 <p align="center">
-  <a href="https://lihim.vercel.app"><img src="apps/web/public/og.png" alt="Lihim: Prove you belong. Never say who you are." width="900" /></a>
+  <a href="https://lihim.tech"><img src="apps/web/public/og.png" alt="Lihim: Prove you belong. Never say who you are." width="900" /></a>
 </p>
 
 > **Status: Stellar testnet.** The full flow (passkey sign-up, groups, invites, on-chain members,
@@ -63,7 +63,7 @@
 
 ## Try it
 
-1. Open **[lihim.vercel.app](https://lihim.vercel.app)** and sign up with a passkey (Face ID,
+1. Open **[lihim.tech](https://lihim.tech)** and sign up with a passkey (Face ID,
    fingerprint or device PIN). There is no password, wallet or seed phrase. The passkey must
    support the WebAuthn PRF extension: Google Password Manager and iCloud Keychain do; Brave's
    local passkey store does not.
@@ -215,8 +215,8 @@ All three contracts run on **Stellar testnet**. The ids are also in
 | --- | --- |
 | **Network** | Stellar Testnet (`Test SDF Network ; September 2015`) |
 | **Indexer start ledger** | `5355723` |
-| **Web** | [lihim.vercel.app](https://lihim.vercel.app) (the WebAuthn RP id; passkeys work only on this origin) |
-| **Relay** | Separate Vercel project, origin-locked to `lihim.vercel.app` |
+| **Web** | [lihim.tech](https://lihim.tech) (the WebAuthn RP id; passkeys work only on this origin) |
+| **Relay** | Separate Vercel project, origin-locked to `lihim.tech` |
 
 **What testnet costs (measured)**
 

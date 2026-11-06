@@ -40,14 +40,18 @@ are superseded; nothing points at them.
 
 | Piece | Where | Notes |
 |---|---|---|
-| Web | Vercel project `lihim`, **https://lihim.vercel.app** (canonical) | Root `apps/web`; build command in `apps/web/vercel.json` builds the SDK first. Vercel Authentication off |
-| Relay | Vercel project `lihim-relay`, https://lihim-relay-tyronvts-projects.vercel.app | Root `apps/relay`, Hono preset. `APP_ORIGIN=https://lihim.vercel.app`. Vercel Authentication off |
+| Web | Vercel project `lihim`, **https://lihim.tech** (canonical) | Root `apps/web`; build command in `apps/web/vercel.json` builds the SDK first. Vercel Authentication off |
+| Relay | Vercel project `lihim-relay`, https://lihim-relay-tyronvts-projects.vercel.app | Root `apps/relay`, Hono preset. `APP_ORIGIN=https://lihim.tech`. Vercel Authentication off |
 | Supabase | project `cyixssswindlgaotuwbx` | 6 migrations applied, Vault secrets `lihim_project_url` + `lihim_cron_secret`, 5 Edge Functions deployed, indexer cron every minute |
 
-Use only `lihim.vercel.app`: it is the WebAuthn RP id (`WEBAUTHN_RP_ID`) and the only origin
+Use only `lihim.tech`: it is the WebAuthn RP id (`WEBAUTHN_RP_ID`) and the only origin
 the relay and the Edge Functions allow (plus `http://localhost:3000` for Edge Function CORS).
-Passkeys do not work on other origins, including `localhost` and the long
+Passkeys do not work on other origins, including `localhost`, `lihim.vercel.app` and the long
 `lihim-tyronvts-projects.vercel.app` alias.
+
+The RP id moved from `lihim.vercel.app` to `lihim.tech` on 2026-11-06. Passkeys made before that
+date cannot sign in, and a new passkey derives new group identities. The two accounts that existed
+then were test accounts, so they were not migrated.
 
 ### Keys and secrets
 
@@ -85,7 +89,7 @@ and broke browser auth with a 401. That key was deleted in Supabase. After any c
   apply time (`20261024010441 init`, …), not the file names. Run `supabase migration repair`
   before any `supabase db push` from the CLI, or keep applying through the MCP.
 - **Supabase Auth Site URL** is still the default `http://localhost:3000`. Passkey sign-in does
-  not use it, but set it to `https://lihim.vercel.app`.
+  not use it, but set it to `https://lihim.tech`.
 
 ## Tested on testnet (2026-10-24)
 
